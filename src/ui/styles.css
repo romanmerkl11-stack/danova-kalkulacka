@@ -275,3 +275,15 @@ ul.params { margin: 6px 0 0; padding-left: 18px; }
 .tick-tip em.danger-text { color: var(--red); }
 @media (max-width: 640px) { .tick { padding: 0 6px; } }
 .tick:hover, .tick:focus { z-index: 30; }
+
+/* jednotná zbaľovacia karta (Card.tsx) */
+.ui-card { scroll-margin-top: 12px; }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.card-head h2 { margin: 0; }
+.card-toggle { display: flex; align-items: center; gap: 8px; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; text-align: left; }
+.card-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
+.chev { display: inline-block; width: 1em; color: var(--muted); transition: transform 0.15s ease; }
+.card-toggle[aria-expanded="true"] .chev { transform: rotate(90deg); }
+.card-body { margin-top: 12px; }
+.ui-card.collapsed { padding-top: 12px; padding-bottom: 12px; }
+.card-actions { display: flex; gap: 8px; align-items: center; }
