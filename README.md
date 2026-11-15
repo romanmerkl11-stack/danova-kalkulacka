@@ -10,7 +10,7 @@ Všetky výpočty a dáta zostávajú v počítači. Na internet ide appka len s
 
 ## Návod na inštaláciu (Windows)
 
-1. Otvorte [posledné vydanie](https://github.com/romanmerkl11-stack/danova-kalkulacka/releases/latest) a kliknite na súbor, ktorý končí na **`.exe`** (napr. `Daňová kalkulačka_0.1.0_x64-setup.exe`). Stiahne sa do priečinka *Stiahnuté súbory*.
+1. Otvorte [posledné vydanie](https://github.com/romanmerkl11-stack/danova-kalkulacka/releases/latest) a kliknite na súbor, ktorý končí na **`.exe`** (napr. `Danova.kalkulacka_0.1.0_x64-setup.exe`). Stiahne sa do priečinka *Stiahnuté súbory*.
 2. Súbor spustite dvojklikom.
 3. Ak sa objaví modré okno **„Systém Windows ochránil váš počítač“**, kliknite na **Ďalšie informácie** a potom na **Spustiť aj tak**. (Appka nie je podpísaná certifikátom, preto ju Windows nepozná – je to v poriadku.)
 4. Sprievodca inštaláciou je v slovenčine – stačí klikať **Ďalej** a **Inštalovať**. Netreba heslo správcu.
