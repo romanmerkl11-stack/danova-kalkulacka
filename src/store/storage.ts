@@ -67,6 +67,8 @@ export interface AppData {
   acceptedParams: ParamSet;
   netLog: NetLogEntry[];
   lastInput?: CalcInput;
+  /** naposledy použité IČO */
+  lastIco?: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -105,6 +107,7 @@ export function normalize(raw: unknown): AppData {
     acceptedParams: r.acceptedParams && typeof r.acceptedParams === "object" ? r.acceptedParams : {},
     netLog: Array.isArray(r.netLog) ? r.netLog.slice(-500) : [],
     lastInput: r.lastInput,
+    lastIco: typeof r.lastIco === "string" ? r.lastIco : undefined,
   };
 }
 

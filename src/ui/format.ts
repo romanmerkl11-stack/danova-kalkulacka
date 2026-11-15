@@ -12,3 +12,18 @@ const fmt = new Intl.NumberFormat("sk-SK", { minimumFractionDigits: 0, maximumFr
 
 /** Číslo v slovenskom zápise, bez zbytočných núl. */
 export const formatSkNumber = (n: number): string => fmt.format(n);
+
+/** ISO dátum alebo dátum a čas → „d. m. yyyy“. */
+export function skDate(iso: string | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`;
+}
+
+/** ISO dátum a čas → „d. m. yyyy hh:mm“. */
+export function skDateTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return `${skDate(iso)} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}

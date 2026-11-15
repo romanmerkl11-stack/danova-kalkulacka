@@ -61,7 +61,15 @@ Začni tým, že novej relácii povieš: **„Prečítaj HANDOFF.md a docs/PLAN.
 - **Dialóg povolenia** + log v `data.netLog` funguje (overené: zamietnutie → hláška + záznam v logu).
 - **Hľadanie v RPO aj podľa obchodného mena** (`searchCompanies`, `fullName` + `onlyActive=true`, max. 30 výsledkov, výber zo zoznamu). Výsledok hľadania nemá právnu formu ani SK NACE (API ich v `search` nevracia).
 - Overené v prehliadači: rok 2024, príjmy 31 500 → poistné 3 767,16, ZD 8 832,84, daň 477,95 € (zhoda s Excelom).
-- Ostatné záložky sú zatiaľ „Pripravuje sa“. IČO sa nepamätá medzi spusteniami (doriešiť s Históriou).
+
+**UI – časť 2 (krok 3) ✅** – `src/ui/tabs/*`, `src/params/flatten.ts`, `src/version.ts`:
+- **Uložiť výpočet** (nový / zmeny / ako nový), `lastIco` sa pamätá v `AppData`.
+- **História:** filter, skupiny podľa IČO, otvoriť / duplikovať / premenovať / zmazať, **porovnanie dvoch** výpočtov s rozdielom.
+- **Sadzby:** tabuľka všetkých hodnôt roka (zdroj, platnosť, ✓/⚠), kontrola nových sadzieb s diffom a prijatím po rokoch, „Vrátiť zabalené sadzby“. Kým `paramsUrl` obsahuje `OWNER`, je kontrola vypnutá.
+- **Nastavenia:** offline, nepýtať sa, povolené zdroje, kontroly pri štarte, log prístupov, záloha/obnova JSON, kontrola novej verzie.
+- **Ako sa to počíta:** text podľa enginu s hodnotami zvoleného roka.
+- Overené v prehliadači: uloženie, duplikovanie, porovnanie, zobrazenie všetkých záložiek.
+
 - Dev v prehliadači: `npm run dev` (port 1420); `.claude/launch.json` je v nadradenom priečinku `DANE/`.
 
 ### Čo engine počíta (`calculate(input)`)
@@ -139,7 +147,7 @@ Hlavné zdroje: podpora.financnasprava.sk (NČZD 2026, bonus 2026, paušálne v�
      - `dialog:default`, `opener:default`.
    - CSP v `tauri.conf.json`.
    - Bundle: `targets: ["nsis"]`, `windows.nsis.installMode: "currentUser"` (netreba admin), `languages: ["Slovak"]`.
-3. **UI** (`src/main.tsx`, `src/App.tsx`, `src/ui/*`) – ✅ Výpočet + dialóg povolenia hotové; zostáva História, Sadzby, Nastavenia, Ako sa to počíta. Záložky:
+3. **UI** (`src/main.tsx`, `src/App.tsx`, `src/ui/*`) – ✅ hotové (všetky záložky). Pôvodná špecifikácia:
    - **Výpočet:**
      - vľavo vstupy: IČO s tlačidlom „Doplniť z registra“, rok, prepínač ročne/mesačne, tabuľka 12 mesiacov (príjem, SP, ZP, editovateľné), zbaľovacie sekcie (zamestnanie, prenájom, deti, manžel/ka, DDS, strata, preddavky);
      - vpravo súhrn, varovania, **panel limitov** s progress barmi a rezervou, kroky výpočtu s ⓘ (vzorec, §, zdroj, dátum, ⚠ neoverené) a ✎ na prepísanie (s „vrátiť automatiku“), odvody a preddavky na ďalší rok.

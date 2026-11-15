@@ -3,14 +3,16 @@ import { calculate, defaultInput } from "./engine/calc";
 import type { CalcInput } from "./engine/types";
 import { setNetContext, type Decision, type NetRequest } from "./net/net";
 import { PARAMS } from "./params/data";
-import { loadData, saveData, type AppData, type Company } from "./store/storage";
-import { InputsPanel } from "./ui/InputsPanel";
-import { LimitsPanel } from "./ui/LimitsPanel";
-import { MonthsTable } from "./ui/MonthsTable";
-import { NextYearPanel } from "./ui/NextYearPanel";
+import { loadData, saveData, type AppData, type Company, type SavedCalc } from "./store/storage";
+import { fetchParamsUpdate, checkAppUpdate, type ParamsUpdate, type ReleaseInfo } from "./net/sources";
+import { diffYears } from "./params/flatten";
 import { PermissionDialog } from "./ui/PermissionDialog";
-import { StepsList } from "./ui/StepsList";
-import { SummaryPanel } from "./ui/SummaryPanel";
+import { CalcTab } from "./ui/tabs/CalcTab";
+import { HistoryTab } from "./ui/tabs/HistoryTab";
+import { HowTab } from "./ui/tabs/HowTab";
+import { RatesTab } from "./ui/tabs/RatesTab";
+import { SettingsTab } from "./ui/tabs/SettingsTab";
+import { APP_VERSION, isNewerVersion } from "./version";
 
 const TABS = ["Výpočet", "História", "Sadzby", "Nastavenia", "Ako sa to počíta"] as const;
 type Tab = (typeof TABS)[number];
@@ -28,7 +30,12 @@ interface Pending {
 export default function App() {
   const [data, setData] = useState<AppData | null>(null);
   const [tab, setTab] = useState<Tab>("Výpočet");
-  const [ico, setIco] = useState("");
+  const [ico, setIcoState] = useState("");
+  const [currentCalcId, setCurrentCalcId] = useState<string | null>(null);
+  const [paramsUpdate, setParamsUpdate] = useState<ParamsUpdate | null>(null);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [appRelease, setAppRelease] = useState<ReleaseInfo | null>(null);
+  const startupRef = useRef(false);
   const [pending, setPending] = useState<Pending | null>(null);
   const dataRef = useRef<AppData | null>(null);
   const loadedRef = useRef(false);
@@ -36,6 +43,7 @@ export default function App() {
   useEffect(() => {
     loadData().then((d) => {
       dataRef.current = d;
+      setIcoState(d.lastIco ?? "");
       setData(d);
     });
   }, []);
@@ -69,6 +77,28 @@ export default function App() {
     return () => window.clearTimeout(t);
   }, [data]);
 
+  // jednorazové kontroly po načítaní (podľa nastavení; sieťová vrstva sa pýta na povolenie)
+  useEffect(() => {
+    if (!ready || startupRef.current) return;
+    startupRef.current = true;
+    const st = dataRef.current!.settings;
+    if (st.checkParamsOnStart && !st.paramsUrl.includes("OWNER")) {
+      fetchParamsUpdate(st.paramsUrl)
+        .then((u) => {
+          const merged = { ...PARAMS, ...dataRef.current!.acceptedParams };
+          if (diffYears(merged, u.years).length > 0) setParamsUpdate(u);
+        })
+        .catch(() => undefined);
+    }
+    if (st.checkUpdatesOnStart && !st.updateRepo.includes("OWNER")) {
+      checkAppUpdate(st.updateRepo)
+        .then((r) => {
+          if (r && isNewerVersion(r.version, APP_VERSION)) setAppRelease(r);
+        })
+        .catch(() => undefined);
+    }
+  }, [ready]);
+
   const input: CalcInput | null = useMemo(() => (data ? (data.lastInput ?? defaultInput(startYear())) : null), [data]);
 
   const replaceInput = useCallback((i: CalcInput) => setData((d) => (d ? { ...d, lastInput: i } : d)), []);
@@ -82,6 +112,11 @@ export default function App() {
       }),
     [],
   );
+
+  const setIco = useCallback((v: string) => {
+    setIcoState(v);
+    setData((d) => (d ? { ...d, lastIco: v } : d));
+  }, []);
 
   const onFound = useCallback((c: Company) => {
     setData((d) => (d ? { ...d, companies: [...d.companies.filter((x) => x.ico !== c.ico), c] } : d));
@@ -98,9 +133,47 @@ export default function App() {
     }
   }, [input, params]);
 
+  const currentCalc = data?.calcs.find((c) => c.id === currentCalcId) ?? null;
+
+  const company = data?.companies.find((c) => c.ico === ico) ?? null;
+
+  const saveCalc = (title: string, asNew: boolean) => {
+    if (!input || !calc?.result) return;
+    const r = calc.result.summary;
+    const now = new Date().toISOString();
+    const base = {
+      ico,
+      companyName: company?.name ?? (ico || "Bez IČO"),
+      year: input.year,
+      input: structuredClone(input),
+      summary: { income: r.income, tax: r.tax, taxToPay: r.taxToPay, sp: r.sp, zp: r.zp, net: r.net },
+      updatedAt: now,
+    };
+    if (!asNew && currentCalc) {
+      setData((d) => (d ? { ...d, calcs: d.calcs.map((c) => (c.id === currentCalc.id ? { ...c, ...base, title } : c)) } : d));
+    } else {
+      const id = crypto.randomUUID();
+      const saved: SavedCalc = { id, title, createdAt: now, ...base };
+      setData((d) => (d ? { ...d, calcs: [...d.calcs, saved] } : d));
+      setCurrentCalcId(id);
+    }
+  };
+
+  const openCalc = (c: SavedCalc) => {
+    setData((d) => (d ? { ...d, lastInput: structuredClone(c.input), lastIco: c.ico } : d));
+    setIcoState(c.ico);
+    setCurrentCalcId(c.id);
+    setTab("Výpočet");
+  };
+
+  const replaceAllData = (d: AppData) => {
+    setData(d);
+    setIcoState(d.lastIco ?? "");
+    setCurrentCalcId(null);
+  };
+
   if (!data || !input || !calc) return <div className="loading">Načítavam…</div>;
 
-  const company = data.companies.find((c) => c.ico === ico) ?? null;
   const decide = (d: Decision) => {
     pending?.resolve(d);
     setPending(null);
@@ -119,33 +192,41 @@ export default function App() {
         </nav>
       </header>
 
-      {tab !== "Výpočet" ? (
-        <main className="page">
-          <section className="card">
-            <h2>{tab}</h2>
-            <p>Pripravuje sa.</p>
-          </section>
-        </main>
-      ) : (
-        <main className="layout">
-          <InputsPanel input={input} update={update} replaceInput={replaceInput} ico={ico} onIco={setIco} company={company} onFound={onFound} />
-          <div className="results">
-            {calc.error || !calc.result ? (
-              <div className="box danger" role="alert">
-                Výpočet sa nepodarilo dokončiť: {calc.error}
-              </div>
-            ) : (
-              <>
-                <SummaryPanel result={calc.result} />
-                <LimitsPanel result={calc.result} />
-                <MonthsTable input={input} result={calc.result} update={update} />
-                <StepsList result={calc.result} input={input} update={update} />
-                <NextYearPanel result={calc.result} />
-              </>
-            )}
-          </div>
-        </main>
+      {paramsUpdate && !bannerDismissed && diffYears(params, paramsUpdate.years).length > 0 && (
+        <div className="banner" role="status">
+          <span>Sú dostupné nové sadzby – pozrite záložku Sadzby.</span>
+          <button type="button" className="link-btn" onClick={() => setTab("Sadzby")}>Otvoriť</button>
+          <button type="button" className="icon ghost" onClick={() => setBannerDismissed(true)} aria-label="Zavrieť oznámenie">×</button>
+        </div>
       )}
+      {appRelease && (
+        <div className="banner" role="status">
+          <span>Je dostupná nová verzia aplikácie {appRelease.version}.</span>
+          <a href={appRelease.url} target="_blank" rel="noreferrer">Stiahnuť</a>
+          <button type="button" className="icon ghost" onClick={() => setAppRelease(null)} aria-label="Zavrieť oznámenie">×</button>
+        </div>
+      )}
+
+      {tab === "Výpočet" && (
+        <CalcTab
+          input={input}
+          update={update}
+          replaceInput={replaceInput}
+          ico={ico}
+          onIco={setIco}
+          company={company}
+          onFound={onFound}
+          calc={calc}
+          currentCalc={currentCalc}
+          onSave={saveCalc}
+        />
+      )}
+      {tab === "História" && <HistoryTab data={data} setData={(fn) => setData((d) => (d ? fn(d) : d))} params={params} onOpen={openCalc} />}
+      {tab === "Sadzby" && (
+        <RatesTab data={data} setData={(fn) => setData((d) => (d ? fn(d) : d))} params={params} defaultYear={input.year} update={paramsUpdate} setUpdate={setParamsUpdate} />
+      )}
+      {tab === "Nastavenia" && <SettingsTab data={data} setData={(fn) => setData((d) => (d ? fn(d) : d))} onReplaceData={replaceAllData} />}
+      {tab === "Ako sa to počíta" && <HowTab year={input.year} params={params} />}
 
       {pending && <PermissionDialog req={pending.req} onDecide={decide} />}
     </div>

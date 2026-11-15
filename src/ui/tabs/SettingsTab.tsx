@@ -1,0 +1,197 @@
+import { useState } from "react";
+import { NetDenied, SOURCE_LABELS } from "../../net/net";
+import { checkAppUpdate, type ReleaseInfo } from "../../net/sources";
+import { isTauri, normalize, openFile, saveFileAs, type AppData, type Settings, type SourceId } from "../../store/storage";
+import { APP_VERSION, isNewerVersion } from "../../version";
+import { skDateTime } from "../format";
+
+interface Props {
+  data: AppData;
+  setData: (fn: (d: AppData) => AppData) => void;
+  onReplaceData: (d: AppData) => void;
+}
+
+const RESULT_LABEL = { ok: "v poriadku", chyba: "chyba", zamietnuté: "zamietnuté" } as const;
+
+export function SettingsTab({ data, setData, onReplaceData }: Props) {
+  const s = data.settings;
+  const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setData((d) => ({ ...d, settings: { ...d.settings, [k]: v } }));
+  const setAllow = (src: SourceId, v: boolean) => setData((d) => ({ ...d, settings: { ...d.settings, alwaysAllow: { ...d.settings.alwaysAllow, [src]: v } } }));
+
+  const [backupMsg, setBackupMsg] = useState<string | null>(null);
+  const [restore, setRestore] = useState<AppData | null>(null);
+  const [upd, setUpd] = useState<{ busy: boolean; msg?: string; release?: ReleaseInfo | null; checked?: boolean }>({ busy: false });
+
+  const backup = async () => {
+    setBackupMsg(null);
+    try {
+      const name = `danova-kalkulacka-zaloha-${new Date().toISOString().slice(0, 10)}.json`;
+      const ok = await saveFileAs(name, JSON.stringify(data, null, 1), "Záloha", "json");
+      setBackupMsg(ok ? "Záloha uložená." : "Ukladanie zrušené.");
+    } catch (e) {
+      setBackupMsg(`Zálohu sa nepodarilo uložiť: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  const pickRestore = async () => {
+    setBackupMsg(null);
+    setRestore(null);
+    try {
+      const f = await openFile("Záloha", ["json"]);
+      if (!f) return;
+      const raw = JSON.parse(new TextDecoder().decode(f.bytes));
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("neplatný formát");
+      setRestore(normalize(raw));
+    } catch (e) {
+      setBackupMsg(`Súbor sa nepodarilo načítať ako zálohu: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  const checkUpdate = async () => {
+    setUpd({ busy: true });
+    try {
+      const release = await checkAppUpdate(s.updateRepo);
+      setUpd({ busy: false, release, checked: true });
+    } catch (e) {
+      setUpd({ busy: false, msg: e instanceof NetDenied ? "Prístup zamietnutý." : `Kontrola sa nepodarila: ${e instanceof Error ? e.message : String(e)}` });
+    }
+  };
+
+  const clearLog = () => {
+    if (window.confirm("Naozaj vymazať celý log prístupov na internet?")) setData((d) => ({ ...d, netLog: [] }));
+  };
+
+  const repoUnset = s.updateRepo.includes("OWNER");
+  const log = [...data.netLog].reverse();
+
+  return (
+    <main className="page wide">
+      <section className="card">
+        <h2>Sieť</h2>
+        <label className="check">
+          <input type="checkbox" checked={s.offline} onChange={(e) => set("offline", e.target.checked)} />
+          Úplne offline – appka nikdy nejde na internet
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={s.neverAsk} disabled={s.offline} onChange={(e) => set("neverAsk", e.target.checked)} />
+          Nepýtať sa – rovno ísť na internet
+        </label>
+        <h3>Zdroje povolené natrvalo</h3>
+        {(Object.keys(SOURCE_LABELS) as SourceId[]).map((src) => (
+          <label key={src} className="check">
+            <input type="checkbox" checked={!!s.alwaysAllow[src]} onChange={(e) => setAllow(src, e.target.checked)} />
+            {SOURCE_LABELS[src]} – vždy povoliť
+          </label>
+        ))}
+        <h3>Kontroly pri štarte</h3>
+        <label className="check">
+          <input type="checkbox" checked={s.checkParamsOnStart} onChange={(e) => set("checkParamsOnStart", e.target.checked)} />
+          Pri štarte skontrolovať nové sadzby
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={s.checkUpdatesOnStart} onChange={(e) => set("checkUpdatesOnStart", e.target.checked)} />
+          Pri štarte skontrolovať novú verziu aplikácie
+        </label>
+        <p className="note small">Kontroly pri štarte sa riadia aj ostatnými povoleniami – bez povolenia sa appka spýta.</p>
+        <div className="field">
+          <label htmlFor="params-url">Adresa súboru so sadzbami</label>
+          <input id="params-url" type="text" value={s.paramsUrl} onChange={(e) => set("paramsUrl", e.target.value)} />
+        </div>
+        <div className="field">
+          <label htmlFor="update-repo">Repozitár aplikácie na GitHube (vlastník/repozitár)</label>
+          <input id="update-repo" type="text" value={s.updateRepo} onChange={(e) => set("updateRepo", e.target.value)} />
+        </div>
+      </section>
+
+      <section className="card">
+        <h2>Log prístupov na internet</h2>
+        {log.length === 0 ? (
+          <p className="note">Appka zatiaľ nešla na internet.</p>
+        ) : (
+          <>
+            <div className="table-wrap">
+              <table className="months netlog">
+                <thead>
+                  <tr>
+                    <th scope="col">Dátum a čas</th>
+                    <th scope="col">Zdroj</th>
+                    <th scope="col">Adresa</th>
+                    <th scope="col">Čo sa odoslalo</th>
+                    <th scope="col">Výsledok</th>
+                    <th scope="col">Detail</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {log.map((e, i) => (
+                    <tr key={`${e.at}-${i}`}>
+                      <td>{skDateTime(e.at)}</td>
+                      <td style={{ whiteSpace: "normal" }}>{SOURCE_LABELS[e.source] ?? e.source}</td>
+                      <td className="mono wrap" style={{ whiteSpace: "normal" }}>{e.url}</td>
+                      <td style={{ whiteSpace: "normal" }}>{e.sent}</td>
+                      <td>{RESULT_LABEL[e.result] ?? e.result}</td>
+                      <td style={{ whiteSpace: "normal" }}>{e.detail ?? ""}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="row" style={{ marginTop: 12 }}>
+              <button type="button" className="danger-btn" onClick={clearLog}>Vymazať log</button>
+            </div>
+          </>
+        )}
+      </section>
+
+      <section className="card">
+        <h2>Záloha</h2>
+        <p className="note">
+          Vaše dáta (výpočty, firmy, nastavenia) sú uložené {isTauri() ? "v priečinku aplikácie (AppData\\Roaming\\sk.danovakalkulacka\\data.json)" : "v úložisku prehliadača"}.
+        </p>
+        <div className="row">
+          <button type="button" onClick={backup}>Zálohovať všetky dáta</button>
+          <button type="button" className="ghost" onClick={pickRestore}>Obnoviť zo zálohy</button>
+        </div>
+        {backupMsg && <p className="note" role="status">{backupMsg}</p>}
+        {restore && (
+          <div className="box warn" role="alert" style={{ marginTop: 12 }}>
+            <p style={{ margin: "0 0 8px" }}>
+              Záloha obsahuje {restore.calcs.length} výpočtov a {restore.companies.length} firiem. Obnovením sa nahradia všetky súčasné dáta v appke.
+            </p>
+            <div className="row">
+              <button
+                type="button"
+                onClick={() => {
+                  onReplaceData(restore);
+                  setRestore(null);
+                  setBackupMsg("Dáta boli obnovené zo zálohy.");
+                }}
+              >
+                Nahradiť súčasné dáta
+              </button>
+              <button type="button" className="ghost" onClick={() => setRestore(null)}>Zrušiť</button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      <section className="card">
+        <h2>Aktualizácia aplikácie</h2>
+        <p className="note">Nainštalovaná verzia: {APP_VERSION}</p>
+        <div className="row">
+          <button type="button" onClick={checkUpdate} disabled={repoUnset || upd.busy}>{upd.busy ? "Kontrolujem…" : "Skontrolovať novú verziu"}</button>
+        </div>
+        {repoUnset && <p className="note small warn-text">Repozitár aplikácie ešte nie je nastavený (Nastavenia).</p>}
+        {upd.msg && <p className="note warn-text" role="alert">{upd.msg}</p>}
+        {upd.checked &&
+          (upd.release && isNewerVersion(upd.release.version, APP_VERSION) ? (
+            <p role="status">
+              Je dostupná nová verzia <strong>{upd.release.version}</strong>.{" "}
+              <a href={upd.release.url} target="_blank" rel="noreferrer">Stiahnuť</a>
+            </p>
+          ) : (
+            <p role="status">Používate najnovšiu verziu.</p>
+          ))}
+      </section>
+    </main>
+  );
+}

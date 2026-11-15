@@ -169,3 +169,28 @@ ul.params { margin: 6px 0 0; padding-left: 18px; }
 .hit { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; padding: 8px 12px; background: transparent; color: var(--text); border: 0; border-radius: 0; text-align: left; cursor: pointer; }
 .hit:hover, .hit:focus-visible { background: var(--info-bg); }
 .hit .small { color: var(--muted); }
+
+/* záložky 2. časti */
+.page.wide { max-width: 1100px; display: flex; flex-direction: column; gap: 16px; }
+.page.how { max-width: 800px; }
+.page.how ul { padding-left: 20px; }
+.page.how li { margin: 4px 0; }
+.banner { display: flex; gap: 12px; align-items: center; padding: 8px 20px; background: var(--info-bg); border-bottom: 1px solid var(--accent); }
+.banner span { flex: 1; }
+.good-text { color: var(--good); font-weight: 600; }
+.save-actions { flex-wrap: wrap; }
+.hist-group h3 { color: var(--text); margin-top: 18px; }
+.hist-list { list-style: none; margin: 0; padding: 0; }
+.hist-row { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--border); flex-wrap: wrap; }
+.hist-check { margin-top: 2px; }
+.hist-main { flex: 1 1 320px; min-width: 0; }
+.hist-nums { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 6px 0 0; font-variant-numeric: tabular-nums; }
+.hist-nums div { display: flex; gap: 6px; }
+.hist-nums dt { margin: 0; }
+.hist-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.rates-head { margin-bottom: 8px; }
+.rates-head label { flex: none; }
+.rates-head select { flex: none; }
+.rates-diff { margin: 10px 0; }
+.compare td.r, .rates td.r { white-space: nowrap; }
+.netlog td { vertical-align: top; }
