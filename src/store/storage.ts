@@ -76,6 +76,8 @@ export interface AppData {
   lastIco?: string;
   /** naučené pravidlá pre triedenie pohybov z výpisu z účtu */
   bankRules?: BankRule[];
+  /** stav záložky Rýchly výpočet */
+  quick?: { year: number; income: number; expenses: number | null; spH1?: number | null; spH2?: number | null; zp?: number | null };
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -102,6 +104,8 @@ export const isTauri = () => typeof window !== "undefined" && "__TAURI_INTERNALS
 const LS_KEY = "danova-kalkulacka-data";
 const FILE = "data.json";
 
+const numOrNull = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
+
 export function normalize(raw: unknown): AppData {
   const d = emptyData();
   if (!raw || typeof raw !== "object") return d;
@@ -116,6 +120,17 @@ export function normalize(raw: unknown): AppData {
     lastInput: r.lastInput,
     lastIco: typeof r.lastIco === "string" ? r.lastIco : undefined,
     bankRules: Array.isArray(r.bankRules) ? r.bankRules : [],
+    quick:
+      r.quick && typeof r.quick === "object" && Number.isFinite(r.quick.year) && Number.isFinite(r.quick.income)
+        ? {
+            year: r.quick.year,
+            income: r.quick.income,
+            expenses: numOrNull(r.quick.expenses),
+            spH1: numOrNull(r.quick.spH1),
+            spH2: numOrNull(r.quick.spH2),
+            zp: numOrNull(r.quick.zp),
+          }
+        : undefined,
   };
 }
 

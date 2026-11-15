@@ -224,3 +224,32 @@ ul.params { margin: 6px 0 0; padding-left: 18px; }
 .contrib-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .contrib-table td.small { color: var(--muted); }
 .bank-entry button { margin-top: 4px; }
+
+/* rýchly výpočet */
+.quick { max-width: 1100px; margin: 0 auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+.quick-inputs { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 800px) { .quick-inputs { grid-template-columns: minmax(0, 1fr); } }
+.quick-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
+.quick-head h2 { margin: 0; }
+.quick-head select { width: auto; }
+.quick .big input.num { font-size: 1.6rem; font-weight: 700; padding: 8px 32px 8px 10px; }
+.quick .field { margin-bottom: 8px; }
+.slider-wrap { position: relative; padding: 6px 0 calc(16px + var(--rows, 2) * 14px); }
+.slider-wrap input[type="range"] { width: 100%; margin: 0; accent-color: var(--accent); }
+.ticks { position: absolute; left: 0; right: 0; top: 26px; height: 0; pointer-events: none; }
+.tick { position: absolute; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+.tick::before { content: ""; width: 2px; height: 10px; background: var(--muted); }
+.tick.passed { color: var(--red); font-weight: 600; }
+.tick.passed::before { background: var(--red); width: 3px; }
+.tick span { margin-top: 2px; }
+.tick span { margin-top: calc(2px + var(--row, 0) * 14px); }
+@media (max-width: 640px) { .tick span { display: none; } .slider-wrap { padding-bottom: 20px; } }
+.quick .stats { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.quick .stat-value { font-size: 1.7rem; }
+.quick-warn { display: flex; flex-direction: column; gap: 8px; }
+.quick-actions { display: flex; justify-content: flex-end; }
+.quick .card { padding: 14px 16px; }
+.quick-contrib-head { margin-top: 14px; }
+.quick-contrib { display: grid; gap: 6px; }
+.quick-contrib .field { display: grid; grid-template-columns: 1fr 9.5rem; align-items: center; gap: 10px; margin: 0; }
+.quick-contrib .field label { margin: 0; }

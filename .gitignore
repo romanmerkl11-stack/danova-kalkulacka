@@ -3,3 +3,6 @@ dist
 src-tauri/target
 src-tauri/gen
 *.log
+
+# osobné údaje – nikdy necommitovať
+reference/*.xlsx

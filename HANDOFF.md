@@ -81,6 +81,10 @@ Začni tým, že novej relácii povieš: **„Prečítaj HANDOFF.md a docs/PLAN.
 
 **Odvody** – vstupy „Moje mesačné odvody“ (SP 1–6, SP 7–12, ZP) a panel **„Z čoho sa skladajú odvody“** (fondy SP so sadzbami a účelom, VZ, ZP, budúci rok) – `src/ui/contrib.ts`, `ContributionsPanel.tsx`.
 
+**Rýchly výpočet** (prvá, predvolená záložka) – `src/ui/tabs/QuickTab.tsx`, `src/ui/quick.ts`: príjmy + posuvník so značkami limitov, výdavky predvyplnené (prepis cez `overrides.vydavky`), daň, odvody roka, nové odvody, čistý príjem. Prekročené limity sa ukážu až po prekročení, pod výsledkami (bez „povinnosti podať DP“). Stav v `AppData.quick`.
+
+**Publikovanie ODLOŽENÉ** (rozhodnutie používateľa: najprv dokončiť appku). Rozhodnuté: **verejné** GitHub repo. Pripravené: história gitu očistená od osobných údajov (autor `danova-kalkulacka`, vymyslené čísla v teste), `reference/*.xlsx` v `.gitignore`, `npm run params` → `params/params.json`. Zálohy pred čistením `../*.bundle` obsahujú osobné údaje – nepushovať.
+
 - Dev v prehliadači: `npm run dev` (port 1420); `.claude/launch.json` je v nadradenom priečinku `DANE/`.
 
 ### Čo engine počíta (`calculate(input)`)

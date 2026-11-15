@@ -8,6 +8,7 @@ import { fetchParamsUpdate, checkAppUpdate, type ParamsUpdate, type ReleaseInfo 
 import { diffYears } from "./params/flatten";
 import { PermissionDialog } from "./ui/PermissionDialog";
 import { PrintReport } from "./ui/PrintReport";
+import { QuickTab } from "./ui/tabs/QuickTab";
 import { CalcTab } from "./ui/tabs/CalcTab";
 import { HistoryTab } from "./ui/tabs/HistoryTab";
 import { HowTab } from "./ui/tabs/HowTab";
@@ -15,7 +16,7 @@ import { RatesTab } from "./ui/tabs/RatesTab";
 import { SettingsTab } from "./ui/tabs/SettingsTab";
 import { APP_VERSION, isNewerVersion } from "./version";
 
-const TABS = ["Výpočet", "História", "Sadzby", "Nastavenia", "Ako sa to počíta"] as const;
+const TABS = ["Rýchly výpočet", "Výpočet", "História", "Sadzby", "Nastavenia", "Ako sa to počíta"] as const;
 type Tab = (typeof TABS)[number];
 
 const years = Object.keys(PARAMS).map(Number);
@@ -30,7 +31,7 @@ interface Pending {
 
 export default function App() {
   const [data, setData] = useState<AppData | null>(null);
-  const [tab, setTab] = useState<Tab>("Výpočet");
+  const [tab, setTab] = useState<Tab>("Rýchly výpočet");
   const [ico, setIcoState] = useState("");
   const [currentCalcId, setCurrentCalcId] = useState<string | null>(null);
   const [paramsUpdate, setParamsUpdate] = useState<ParamsUpdate | null>(null);
@@ -214,6 +215,20 @@ export default function App() {
         </div>
       )}
 
+      {tab === "Rýchly výpočet" && (
+        <QuickTab
+          quick={data.quick ?? { year: startYear(), income: 0, expenses: null }}
+          onQuick={(q) => setData((d) => (d ? { ...d, quick: q } : d))}
+          params={params}
+          years={years.slice().sort((a, b) => a - b)}
+          onDetailed={(i) => {
+            setData((d) => (d ? { ...d, lastInput: i } : d));
+            setCurrentCalcId(null);
+            setTab("Výpočet");
+          }}
+          lastInput={data.lastInput}
+        />
+      )}
       {tab === "Výpočet" && (
         <CalcTab
           input={input}
