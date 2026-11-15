@@ -74,6 +74,8 @@ export interface AppData {
   settings: Settings;
   /** sadzby prijaté používateľom (prepisujú zabalené) */
   acceptedParams: ParamSet;
+  /** dátum zverejnenia prijatých sadzieb (publishedAt) */
+  acceptedParamsDate?: string;
   netLog: NetLogEntry[];
   lastInput?: CalcInput;
   /** naposledy použité IČO */
@@ -83,7 +85,21 @@ export interface AppData {
   /** naučené pravidlá pre triedenie pohybov z výpisu z účtu */
   bankRules?: BankRule[];
   /** stav záložky Rýchly výpočet */
-  quick?: { year: number; income: number; expenses: number | null; spH1?: number | null; spH2?: number | null; zp?: number | null };
+  quick?: {
+    year: number;
+    income: number;
+    expenses: number | null;
+    spH1?: number | null;
+    spH2?: number | null;
+    zp?: number | null;
+    profile?: "szco" | "zamestnanec" | "oboje";
+    empGross?: number | null;
+    empInsurance?: number | null;
+    empWithheld?: number | null;
+    rentMonthly?: number | null;
+    rentMonths?: number | null;
+    rentExpenses?: number | null;
+  };
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -136,6 +152,7 @@ export function normalize(raw: unknown): AppData {
     calcs: Array.isArray(r.calcs) ? r.calcs : [],
     settings: cleanLayout(withRealRepo({ ...DEFAULT_SETTINGS, ...(r.settings ?? {}) })),
     acceptedParams: r.acceptedParams && typeof r.acceptedParams === "object" ? r.acceptedParams : {},
+    acceptedParamsDate: typeof r.acceptedParamsDate === "string" ? r.acceptedParamsDate : undefined,
     netLog: Array.isArray(r.netLog) ? r.netLog.slice(-500) : [],
     lastInput: r.lastInput,
     lastIco: typeof r.lastIco === "string" ? r.lastIco : undefined,
@@ -150,6 +167,13 @@ export function normalize(raw: unknown): AppData {
             spH1: numOrNull(r.quick.spH1),
             spH2: numOrNull(r.quick.spH2),
             zp: numOrNull(r.quick.zp),
+            profile: r.quick.profile === "zamestnanec" || r.quick.profile === "oboje" ? r.quick.profile : "szco",
+            empGross: numOrNull(r.quick.empGross),
+            empInsurance: numOrNull(r.quick.empInsurance),
+            empWithheld: numOrNull(r.quick.empWithheld),
+            rentMonthly: numOrNull(r.quick.rentMonthly),
+            rentMonths: numOrNull(r.quick.rentMonths),
+            rentExpenses: numOrNull(r.quick.rentExpenses),
           }
         : undefined,
   };

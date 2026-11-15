@@ -2,7 +2,7 @@
 import { calculate, defaultInput } from "../engine/calc";
 import { eur } from "../engine/money";
 import type { ParamSet } from "../params/types";
-import type { CalcInput, LimitInfo } from "../engine/types";
+import type { CalcInput, LimitInfo, Profile } from "../engine/types";
 
 export interface QuickState {
   year: number;
@@ -13,6 +13,16 @@ export interface QuickState {
   spH1?: number | null;
   spH2?: number | null;
   zp?: number | null;
+  /** chýba = živnosť */
+  profile?: Profile;
+  /** zamestnanie (profil „oboje“): príjmy, poistné, zrazené preddavky z potvrdenia; pri profile „zamestnanec“ je úhrn príjmov v `income` */
+  empGross?: number | null;
+  empInsurance?: number | null;
+  empWithheld?: number | null;
+  /** prenájom (profil „zamestnanec“): nájomné mesačne × mesiacov, výdavky */
+  rentMonthly?: number | null;
+  rentMonths?: number | null;
+  rentExpenses?: number | null;
 }
 
 /** Stav bez ručne zadaných odvodov (na zobrazenie automatických súm). */
@@ -27,13 +37,38 @@ function applyContributions(i: CalcInput, q: QuickState) {
 export const SLIDER_STEP = 100;
 export const SLIDER_MIN_MAX = 120000;
 
+/** Zamestnanie a prenájom z rýchleho stavu podľa profilu. */
+function applyProfile(i: CalcInput, q: QuickState) {
+  const profile = q.profile ?? "szco";
+  i.profile = profile;
+  if (profile === "zamestnanec") {
+    delete i.employment.items;
+    delete i.rental.items;
+    i.employment.gross = Math.max(0, q.income);
+    i.employment.insurance = Math.max(0, q.empInsurance ?? 0);
+    i.employment.taxWithheld = Math.max(0, q.empWithheld ?? 0);
+    const months = Math.min(12, Math.max(0, q.rentMonths ?? 12));
+    const monthly = Math.max(0, q.rentMonthly ?? 0);
+    i.rental.incomeMonthly = monthly;
+    i.rental.incomeMonths = months;
+    i.rental.income = Math.round(monthly * months * 100) / 100;
+    i.rental.expenses = Math.max(0, q.rentExpenses ?? 0);
+  } else if (profile === "oboje") {
+    delete i.employment.items;
+    i.employment.gross = Math.max(0, q.empGross ?? 0);
+    i.employment.insurance = Math.max(0, q.empInsurance ?? 0);
+    i.employment.taxWithheld = Math.max(0, q.empWithheld ?? 0);
+  }
+}
+
 /** CalcInput z rýchleho stavu. `withOverride=false` vráti vždy automatické výdavky. */
 export function buildQuickInput(q: QuickState, withOverride = true): CalcInput {
   const i = defaultInput(q.year);
   i.income.mode = "annual";
   i.income.annual = Math.max(0, q.income);
   applyContributions(i, q);
-  if (withOverride && q.expenses !== null) i.overrides = { ...i.overrides, vydavky: Math.max(0, q.expenses) };
+  applyProfile(i, q);
+  if (withOverride && q.expenses !== null && q.profile !== "zamestnanec") i.overrides = { ...i.overrides, vydavky: Math.max(0, q.expenses) };
   return i;
 }
 
@@ -53,10 +88,11 @@ export function sliderMax(limits: LimitInfo[]): number {
 export function toDetailedInput(q: QuickState, last: CalcInput | undefined): CalcInput {
   const base = last && last.year === q.year ? structuredClone(last) : defaultInput(q.year);
   base.income.mode = "annual";
-  base.income.annual = Math.max(0, q.income);
+  if (q.profile !== "zamestnanec") base.income.annual = Math.max(0, q.income);
   applyContributions(base, q);
+  applyProfile(base, q);
   const overrides = { ...(base.overrides ?? {}) };
-  if (q.expenses !== null) overrides.vydavky = Math.max(0, q.expenses);
+  if (q.expenses !== null && q.profile !== "zamestnanec") overrides.vydavky = Math.max(0, q.expenses);
   else delete overrides.vydavky;
   base.overrides = overrides;
   return base;
@@ -133,4 +169,15 @@ export function taxStartThreshold(q: QuickState, params: ParamSet): { id: string
 /** Hranice odvodov ako limity pre aktuálny príjem (na značky posuvníka a varovania). */
 export function contributionLimits(thresholds: ReturnType<typeof contributionThresholds>, income: number): LimitInfo[] {
   return thresholds.map((t) => ({ ...t, current: income, measure: "príjmy", exceeded: income > t.limit }));
+}
+
+/**
+ * Schody pre popisky značiek: v skupine blízkych značiek je prvá (najmenšia suma) najnižšie
+ * a každá ďalšia o stupeň vyššie; posledná v skupine je hneď pod posuvníkom (stupeň 0).
+ * xs = polohy značiek v px (zoradené), near = vzdialenosť, pod ktorou sú značky „blízko“.
+ */
+export function staircase(xs: number[], near: number): number[] {
+  const out = new Array<number>(xs.length).fill(0);
+  for (let i = xs.length - 2; i >= 0; i--) out[i] = xs[i + 1] - xs[i] < near ? out[i + 1] + 1 : 0;
+  return out;
 }

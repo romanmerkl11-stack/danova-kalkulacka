@@ -1,3 +1,4 @@
+import { AssignNotice } from "../AssignNotice";
 import { openFile } from "../../store/storage";
 import type { ParamSet } from "../../params/types";
 import type { BankRule } from "../../bank/types";
@@ -8,6 +9,7 @@ import type { CalcInput, CalcResult } from "../../engine/types";
 import type { Company, SavedCalc } from "../../store/storage";
 import { Card } from "../Card";
 import { ExportPanel } from "../ExportPanel";
+import { FilingPanel } from "../FilingPanel";
 import { InputsPanel } from "../InputsPanel";
 import type { Update } from "../InputSections";
 import { LimitsPanel } from "../LimitsPanel";
@@ -103,13 +105,17 @@ function openCard(id: string) {
 
 export function CalcTab({ input, update, replaceInput, nickname, onNickname, calcLayout, ico, onIco, company, onFound, calc, currentCalc, onSave, companyName, onLoadInput, params, bankRules, onBankRules }: Props) {
   const [bankOpen, setBankOpen] = useState(false);
-  const layout = resolveLayout(calcLayout).filter((l) => l.visible);
+  const emp = (input.profile ?? "szco") === "zamestnanec";
+  // karty špecifické pre SZČO sa pri profile „zamestnanec“ nezobrazujú
+  const SZCO_ONLY = ["card-months", "card-next", "card-contrib", "card-bank"];
+  const layout = resolveLayout(calcLayout).filter((l) => l.visible && !(emp && SZCO_ONLY.includes(l.id)));
   const result = calc.result;
 
   const render = (id: string) => {
     if (!result) return null;
     switch (id) {
       case "card-steps": return <StepsList result={result} input={input} update={update} />;
+      case "card-filing": return <FilingPanel result={result} />;
       case "card-months": return <MonthsTable input={input} result={result} update={update} />;
       case "card-summary": return <SummaryPanel result={result} />;
       case "card-limits": return <LimitsPanel result={result} />;
@@ -165,6 +171,7 @@ export function CalcTab({ input, update, replaceInput, nickname, onNickname, cal
           openFile={openFile}
         />
       )}
+      {calc.result && <AssignNotice tax={calc.result.summary.tax} year={calc.result.year} />}
     </main>
   );
 }

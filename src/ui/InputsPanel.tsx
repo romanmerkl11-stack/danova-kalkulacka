@@ -4,6 +4,8 @@ import { PARAMS } from "../params/data";
 import type { Company } from "../store/storage";
 import { Card } from "./Card";
 import { CompanyBox } from "./CompanyBox";
+import { OtherIncomeSection } from "./OtherIncomeSection";
+import { ProfileSwitch } from "./ProfileSwitch";
 import { ChildrenSection, EmploymentSection, OtherSections, RentalSection, SpouseSection, type Update } from "./InputSections";
 import { ExpenseRows } from "./ExpenseRows";
 import { expenseTotal } from "./expenseItems";
@@ -28,14 +30,18 @@ const YEARS = Object.keys(PARAMS).map(Number).sort((a, b) => a - b);
 
 export function InputsPanel({ nickname, onNickname, input, update, replaceInput, ico, onIco, company, onFound }: Props) {
   const reset = () => {
-    if (window.confirm("Naozaj chcete vynulovať všetky vstupy?")) replaceInput(defaultInput(input.year));
+    if (window.confirm("Naozaj chcete vynulovať všetky vstupy?")) replaceInput({ ...defaultInput(input.year), profile: input.profile ?? "szco" });
   };
+
+  const profile = input.profile ?? "szco";
+  const emp = profile === "zamestnanec";
 
   return (
     <div className="inputs">
-      <CompanyBox nickname={nickname} onNickname={onNickname} ico={ico} onIco={onIco} company={company} onFound={onFound} />
+      <CompanyBox nickname={nickname} onNickname={onNickname} ico={ico} onIco={onIco} company={company} onFound={onFound} title={emp ? "Kto počíta" : "Podnikateľ"} />
 
       <Card id="card-basic" title="Základné údaje">
+        <ProfileSwitch value={profile} onChange={(p) => update((d) => void (d.profile = p))} />
         <div className="field">
           <label htmlFor="year">Zdaňovacie obdobie (rok)</label>
           <select id="year" value={input.year} onChange={(e) => update((d) => void (d.year = Number(e.target.value)))}>
@@ -45,6 +51,7 @@ export function InputsPanel({ nickname, onNickname, input, update, replaceInput,
           </select>
         </div>
 
+        {!emp && <>
         <fieldset>
           <legend>Príjmy z podnikania</legend>
           <div className="radio-row">
@@ -138,13 +145,15 @@ export function InputsPanel({ nickname, onNickname, input, update, replaceInput,
             onChange={(v) => update((d) => void (d.insurance.zpMonthlyAmount = v))}
           />
         </fieldset>
+        </>}
       </Card>
 
-      <EmploymentSection input={input} update={update} />
+      <EmploymentSection key={emp ? "emp" : "other"} input={input} update={update} defaultOpen={emp} />
       <RentalSection input={input} update={update} />
+      <OtherIncomeSection input={input} update={update} />
       <ChildrenSection input={input} update={update} />
       <SpouseSection input={input} update={update} />
-      <OtherSections input={input} update={update} />
+      <OtherSections input={input} update={update} hideLoss={emp} />
 
       <button type="button" className="danger-btn" onClick={reset}>Vynulovať vstupy</button>
     </div>

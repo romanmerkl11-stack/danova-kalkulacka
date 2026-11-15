@@ -9,5 +9,6 @@ export const ceil2 = (x: number) => Math.ceil(cents(x)) / 100;
 export const sum = (xs: number[]) => round2(xs.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0));
 
 const eurFmt = new Intl.NumberFormat("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-export const eur = (x: number) => `${eurFmt.format(round2(x))} €`;
-export const pct = (r: number) => `${new Intl.NumberFormat("sk-SK", { maximumFractionDigits: 2 }).format(r * 100)} %`;
+/** suma s nezalomiteľnou medzerou pred € (číslo a € sa nerozdelia na dva riadky) */
+export const eur = (x: number) => `${eurFmt.format(round2(x))}\u00a0€`;
+export const pct = (r: number) => `${new Intl.NumberFormat("sk-SK", { maximumFractionDigits: 2 }).format(r * 100)}\u00a0%`;

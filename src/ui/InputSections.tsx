@@ -6,6 +6,7 @@ import { expenseTotal, RENTAL_EXPENSE_PRESETS } from "./expenseItems";
 import { round2 } from "../engine/money";
 import { eur } from "../engine/money";
 import { NumberInput } from "./NumberInput";
+import { applyEmployerRows, EmployerRows } from "./EmployerRows";
 
 export type Update = (fn: (draft: CalcInput) => void) => void;
 interface Props {
@@ -19,15 +20,11 @@ const Section = ({ id, title, children }: { id: string; title: string; children:
   </Card>
 );
 
-export function EmploymentSection({ input, update }: Props) {
-  const e = input.employment;
+export function EmploymentSection({ input, update, defaultOpen = false }: Props & { defaultOpen?: boolean }) {
   return (
-    <Section id="card-employment" title="Zamestnanie (§ 5)">
-      <NumberInput label="Hrubý príjem zo zamestnania" value={e.gross} onChange={(v) => update((d) => void (d.employment.gross = v ?? 0))} />
-      <NumberInput label="Poistné zaplatené zamestnancom" value={e.insurance} onChange={(v) => update((d) => void (d.employment.insurance = v ?? 0))} />
-      <NumberInput label="Preddavky na daň zrazené zamestnávateľom" value={e.taxWithheld} onChange={(v) => update((d) => void (d.employment.taxWithheld = v ?? 0))} />
-      <NumberInput label="Vyplatený daňový bonus" value={e.bonusPaid} onChange={(v) => update((d) => void (d.employment.bonusPaid = v ?? 0))} />
-    </Section>
+    <Card id="card-employment" title="Zamestnanie (§ 5)" defaultOpen={defaultOpen} className="card-small">
+      <EmployerRows employment={input.employment} onChange={(items) => update((d) => void applyEmployerRows(d.employment, items))} />
+    </Card>
   );
 }
 
@@ -142,15 +139,17 @@ export function SpouseSection({ input, update }: Props) {
   );
 }
 
-export function OtherSections({ input, update }: Props) {
+export function OtherSections({ input, update, hideLoss }: Props & { hideLoss?: boolean }) {
   return (
     <>
       <Section id="card-dds" title="Doplnkové dôchodkové sporenie (DDS)">
         <NumberInput label="Zaplatené príspevky na DDS za rok" value={input.dds} onChange={(v) => update((d) => void (d.dds = v ?? 0))} />
       </Section>
-      <Section id="card-loss" title="Strata z minulých rokov">
-        <NumberInput label="Strata na odpočet" value={input.lossCarry} onChange={(v) => update((d) => void (d.lossCarry = v ?? 0))} />
-      </Section>
+      {!hideLoss && (
+        <Section id="card-loss" title="Strata z minulých rokov">
+          <NumberInput label="Strata na odpočet" value={input.lossCarry} onChange={(v) => update((d) => void (d.lossCarry = v ?? 0))} />
+        </Section>
+      )}
       <Section id="card-advances" title="Zaplatené preddavky na daň">
         <NumberInput label="Preddavky zaplatené počas roka" value={input.taxAdvancesPaid} onChange={(v) => update((d) => void (d.taxAdvancesPaid = v ?? 0))} />
       </Section>

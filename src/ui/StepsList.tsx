@@ -9,6 +9,7 @@ const GROUPS: { id: Step["group"]; title: string }[] = [
   { id: "prijmy", title: "Príjmy a výdavky" },
   { id: "zamestnanie", title: "Zamestnanie (§5)" },
   { id: "najom", title: "Prenájom (§6 ods. 3)" },
+  { id: "ostatne", title: "Ostatné príjmy (§ 8)" },
   { id: "dan", title: "Daň" },
   { id: "odvody", title: "Odvody" },
   { id: "buduci", title: "Budúci rok" },

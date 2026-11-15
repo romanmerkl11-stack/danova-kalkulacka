@@ -136,10 +136,11 @@
      "verified": true
     },
     "maxVZ": {
-     "value": 14344,
+     "value": 9128,
      "validFrom": "2024-01-01",
-     "verified": false,
-     "note": "11 × priemerná mzda 2022 – overiť"
+     "verified": true,
+     "source": "https://www.podnikajte.sk/socialne-a-zdravotne-odvody/socialne-odvody-szco-od-1-7-2024",
+     "note": "7 × priemerná mzda 2022 (11 × platí až od 2025)"
     },
     "funds": [
      {
@@ -297,8 +298,9 @@
     "bonusReductionThreshold": {
      "value": 2145,
      "validFrom": "2025-01-01",
-     "verified": false,
-     "note": "krátenie 1/10 z rozdielu – overiť"
+     "verified": true,
+     "source": "https://podpora.financnasprava.sk/272586-Da%C5%88ov%C3%BD-bonus-na-die%C5%A5a-v-roku-2025",
+     "note": "krátenie 1/10 z rozdielu"
     },
     "minimalnaMzda": {
      "value": 816,
@@ -538,8 +540,8 @@
     "minimalnaMzda": {
      "value": 915,
      "validFrom": "2026-01-01",
-     "verified": false,
-     "note": "overiť"
+     "verified": true,
+     "source": "https://www.podnikajte.sk/socialne-a-zdravotne-odvody/hruba-a-cista-minimalna-mzda-v-roku-2027"
     },
     "advanceQuarterly": {
      "value": 5000,
@@ -602,8 +604,8 @@
      "value": 9144,
      "validFrom": "2026-07-01",
      "verified": true,
-     "source": "https://www.socpoist.sk/socialne-poistenie/platenie-poistneho/poistne-szco-od-1-jula-2026-mikroodvod",
-     "note": "príjmy za rok 2025 (12 × 762 €)"
+     "source": "https://employment.gov.sk/sk/socialne-poistenie-dochodkovy-system/socialne-poistenie/najvyznamnejsie-zmeny-socialnom-poisteni/zmeny-od-1-jula-2026.html",
+     "note": "hranica mikroodvodu: 50 % z 12 × 1 524 € (príjmy za rok 2025); nad ňou riadne odvody"
     },
     "koeficient": 1.486,
     "mikro": {
@@ -626,8 +628,9 @@
      "lowerIncome": {
       "value": 2876.9,
       "validFrom": "2026-07-01",
-      "verified": false,
-      "note": "pod touto sumou príjmov povinnosť nevzniká – overiť"
+      "verified": true,
+      "source": "https://employment.gov.sk/sk/socialne-poistenie-dochodkovy-system/socialne-poistenie/najvyznamnejsie-zmeny-socialnom-poisteni/zmeny-od-1-jula-2026.html",
+      "note": "10,5 × životné minimum – do tejto sumy príjmov povinnosť nevzniká"
      }
     }
    },
@@ -671,25 +674,28 @@
     "priemernaMzda": {
      "value": 1620,
      "validFrom": "2027-01-01",
-     "verified": false,
-     "source": "https://www.socpoist.sk/socialne-poistenie/platenie-poistneho/poistne-szco-od-1-jula-2026-mikroodvod",
-     "note": "priemerná mzda 2025 – odvodené zo súm Sociálnej poisťovne"
+     "verified": true,
+     "source": "https://www.podnikajte.sk/socialne-a-zdravotne-odvody/hranica-prijmov-pre-ne-platenie-odvodov-do-socialnej-poistovne-v-roku-2027",
+     "note": "priemerná mesačná mzda v SR za rok 2025"
     },
     "minVZ": {
      "value": 972,
      "validFrom": "2027-01-01",
-     "verified": false,
+     "verified": true,
+     "source": "https://www.podnikajte.sk/socialne-a-zdravotne-odvody/hranica-prijmov-pre-ne-platenie-odvodov-do-socialnej-poistovne-v-roku-2027",
      "note": "60 % z 1 620 €"
     },
     "minPoistne": {
      "value": 322.21,
      "validFrom": "2027-01-01",
-     "verified": false
+     "verified": true,
+     "source": "https://www.podnikajte.sk/socialne-a-zdravotne-odvody/hranica-prijmov-pre-ne-platenie-odvodov-do-socialnej-poistovne-v-roku-2027"
     },
     "maxVZ": {
      "value": 17820,
      "validFrom": "2027-01-01",
-     "verified": false,
+     "verified": true,
+     "source": "https://www.podnikajte.sk/socialne-a-zdravotne-odvody/hranica-prijmov-pre-ne-platenie-odvodov-do-socialnej-poistovne-v-roku-2027",
      "note": "11 × 1 620 €"
     },
     "funds": [
@@ -714,7 +720,8 @@
      "value": 9720,
      "validFrom": "2027-07-01",
      "verified": false,
-     "note": "príjmy za rok 2026 (12 × 810 €) – odvodené"
+     "source": "https://www.podnikajte.sk/socialne-a-zdravotne-odvody/hranica-prijmov-pre-ne-platenie-odvodov-do-socialnej-poistovne-v-roku-2027",
+     "note": "hranica mikroodvodu: 50 % z 12 × 1 620 € (príjmy za rok 2026) – odvodené z pravidla 2026"
     },
     "koeficient": 1.486,
     "mikro": {
@@ -730,6 +737,13 @@
       "validFrom": "2027-01-01",
       "verified": true,
       "source": "https://www.socpoist.sk/socialne-poistenie/platenie-poistneho/poistne-szco-od-1-jula-2026-mikroodvod"
+     },
+     "lowerIncome": {
+      "value": 2983.37,
+      "validFrom": "2027-07-01",
+      "verified": true,
+      "source": "https://www.podnikajte.sk/socialne-a-zdravotne-odvody/hranica-prijmov-pre-ne-platenie-odvodov-do-socialnej-poistovne-v-roku-2027",
+      "note": "10,5 × životné minimum – do tejto sumy príjmov (2026) povinnosť nevzniká"
      }
     }
    },
@@ -739,12 +753,14 @@
      "value": 810,
      "validFrom": "2027-01-01",
      "verified": false,
-     "note": "50 % z 1 620 €"
+     "note": "50 % z 1 620 € – podľa pravidla 2026, oficiálne nepotvrdené"
     },
     "minPreddavok": {
      "value": 129.6,
      "validFrom": "2027-01-01",
-     "verified": false
+     "verified": false,
+     "source": "https://pravnenoviny.sk/?p=20581",
+     "note": "16 % z 810 € – sadzba 16 % pre 2027 oficiálne nepotvrdená"
     },
     "koeficient": 1.486
    },
@@ -752,12 +768,14 @@
     "registration": {
      "value": 50000,
      "validFrom": "2025-01-01",
-     "verified": false
+     "verified": true,
+     "source": "https://www.podnikajte.sk/dan-z-pridanej-hodnoty/registracia-pre-dph-od-2025"
     },
     "immediate": {
      "value": 62500,
      "validFrom": "2025-01-01",
-     "verified": false
+     "verified": true,
+     "source": "https://www.podnikajte.sk/dan-z-pridanej-hodnoty/registracia-pre-dph-od-2025"
     }
    }
   }

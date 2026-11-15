@@ -1,7 +1,7 @@
 import { PARAMS } from "../params/data";
 import type { ParamSet, P, SpParams, TaxParams, YearParams } from "../params/types";
 import { ceil2, eur, floor2, pct, round2, sum } from "./money";
-import type { CalcInput, CalcResult, LimitInfo, MonthRow, NextYear, Step, Warning } from "./types";
+import type { CalcInput, CalcResult, FilingInfo, LimitInfo, MonthRow, NextYear, Step, Warning } from "./types";
 
 export const MONTHS = ["január", "február", "marec", "apríl", "máj", "jún", "júl", "august", "september", "október", "november", "december"];
 
@@ -10,6 +10,7 @@ const empty12 = () => Array<number | null>(12).fill(null);
 export function defaultInput(year: number): CalcInput {
   return {
     year,
+    profile: "szco",
     income: { mode: "annual", annual: 0, monthly: empty12(), extrapolate: true },
     insurance: {
       shiftOneMonth: true,
@@ -102,6 +103,18 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
   if (!yp) {
     warnings.push({ id: "odvody-params-missing", severity: "danger", text: `Odvodové parametre pre rok ${Y} chýbajú – výpočet odvodov je len orientačný.` });
   }
+  const profile = input.profile ?? "szco";
+  const isEmp = profile === "zamestnanec";
+  // zamestnanie: pri zadaných riadkoch (viac zamestnávateľov) sa sčítajú, inak plochá časť
+  const empItems = (input.employment.items ?? []).filter((it) => it.gross || it.insurance || it.taxWithheld || it.bonusPaid);
+  const emp = empItems.length
+    ? {
+        gross: round2(sum(empItems.map((it) => it.gross || 0))),
+        insurance: round2(sum(empItems.map((it) => it.insurance || 0))),
+        taxWithheld: round2(sum(empItems.map((it) => it.taxWithheld || 0))),
+        bonusPaid: round2(sum(empItems.map((it) => it.bonusPaid || 0))),
+      }
+    : { gross: input.employment.gross, insurance: input.employment.insurance, taxWithheld: input.employment.taxWithheld, bonusPaid: input.employment.bonusPaid };
   const SP = (yp ?? ypPrev ?? params[taxYear]).sp;
   const ZP = (yp ?? ypPrev ?? params[taxYear]).zp;
 
@@ -116,7 +129,9 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
 
   // ---------- 1. Príjmy po mesiacoch ----------
   const monthsIncome: { v: number; projected: boolean }[] = [];
-  if (input.income.mode === "monthly") {
+  if (isEmp) {
+    for (let i = 0; i < 12; i++) monthsIncome.push({ v: 0, projected: false });
+  } else if (input.income.mode === "monthly") {
     const filled = input.income.monthly.map((v) => (typeof v === "number" && Number.isFinite(v) ? v : null));
     const known = filled.filter((v): v is number => v !== null);
     const avg = known.length ? known.reduce((a, b) => a + b, 0) / known.length : 0;
@@ -131,7 +146,7 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
   const knownMonths = monthsIncome.filter((m) => !m.projected).length;
 
   const incomeComputed = input.income.mode === "monthly" ? sum(monthsIncome.map((m) => m.v)) : input.income.annual;
-  const income = step({
+  const income = isEmp ? 0 : step({
     id: "prijmy",
     group: "prijmy",
     label: "Príjmy zo živnosti (§ 6 ods. 1 a 2)",
@@ -171,6 +186,10 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
 
   const months: MonthRow[] = [];
   for (let m = 1; m <= 12; m++) {
+    if (isEmp) {
+      months.push({ month: m, income: 0, incomeProjected: false, sp: 0, zp: 0, spAuto: true, zpAuto: true, covers: "–" });
+      continue;
+    }
     // za ktorý mesiac sa v mesiaci m platí
     const shift = input.insurance.shiftOneMonth;
     const coversMonth = shift ? (m === 1 ? 12 : m - 1) : m;
@@ -201,7 +220,7 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
 
   const spPaidComputed = sum(months.map((r) => r.sp));
   const zpPaidComputed = sum(months.map((r) => r.zp));
-  const spPaid = step({
+  const spPaid = isEmp ? 0 : step({
     id: "spZaplatene",
     group: "odvody",
     label: "Sociálne poistenie zaplatené v roku",
@@ -213,7 +232,7 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
     law: "§ 6 ods. 11 zákona 595/2003 Z. z.",
     params: [{ label: `minimálne SP ${Y}`, param: SP.minPoistne }],
   });
-  const zpPaid = step({
+  const zpPaid = isEmp ? 0 : step({
     id: "zpZaplatene",
     group: "odvody",
     label: "Zdravotné poistenie zaplatené v roku",
@@ -223,7 +242,7 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
     law: "§ 6 ods. 11 zákona 595/2003 Z. z.",
     params: [{ label: `minimálny preddavok ZP ${Y}`, param: ZP.minPreddavok }],
   });
-  const insurancePaid = step({
+  const insurancePaid = isEmp ? 0 : step({
     id: "poistne",
     group: "prijmy",
     label: "Preukázateľne zaplatené poistné (SP + ZP)",
@@ -234,8 +253,10 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
   });
 
   // ---------- 3. Výdavky ----------
-  let expenses: number;
-  if (input.expenses.mode === "pausal") {
+  let expenses = 0;
+  if (isEmp) {
+    // zamestnanec: žiadne príjmy ani výdavky z podnikania
+  } else if (input.expenses.mode === "pausal") {
     const raw = income * T.pausalRate;
     const pausal60 = step({
       id: "pausal60",
@@ -284,7 +305,7 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
   }
 
   const czd6Raw = income - expenses;
-  const czd6 = step({
+  const czd6 = isEmp ? 0 : step({
     id: "czd6",
     group: "prijmy",
     label: "Čiastkový základ dane zo živnosti",
@@ -292,10 +313,10 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
     formula: `${eur(income)} − ${eur(expenses)} = ${eur(czd6Raw)}${czd6Raw < 0 ? " → strata, základ 0" : ""}`,
     dpRow: "r. 41",
   });
-  if (czd6Raw < 0) warnings.push({ id: "loss", severity: "info", text: `Daňová strata ${eur(-czd6Raw)} – pri paušálnych výdavkoch sa strata neodpočítava v ďalších rokoch.` });
+  if (!isEmp && czd6Raw < 0) warnings.push({ id: "loss", severity: "info", text: `Daňová strata ${eur(-czd6Raw)} – pri paušálnych výdavkoch sa strata neodpočítava v ďalších rokoch.` });
 
   let czd6AfterLoss = czd6;
-  if (input.lossCarry > 0) {
+  if (!isEmp && input.lossCarry > 0) {
     const loss = step({
       id: "strata",
       group: "prijmy",
@@ -311,22 +332,31 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
 
   // ---------- 4. Zamestnanie (§ 5) ----------
   let czd5 = 0;
-  if (input.employment.gross > 0) {
+  if (emp.gross > 0) {
     czd5 = step({
       id: "czd5",
       group: "zamestnanie",
       label: "Čiastkový základ dane zo zamestnania (§ 5)",
-      value: Math.max(0, input.employment.gross - input.employment.insurance),
-      formula: `${eur(input.employment.gross)} − ${eur(input.employment.insurance)} (poistné zamestnanca)`,
+      value: Math.max(0, emp.gross - emp.insurance),
+      formula: empItems.length > 1
+        ? `${empItems.map((it, i) => `${it.name || `zamestnávateľ ${i + 1}`}: ${eur(it.gross)} − ${eur(it.insurance)}`).join(" + ")} = ${eur(emp.gross)} − ${eur(emp.insurance)} (poistné zamestnanca)`
+        : `${eur(emp.gross)} − ${eur(emp.insurance)} (poistné zamestnanca)`,
+      explain: "Príjem zo závislej činnosti znížený o povinné poistné, ktoré platí zamestnanec (zdravotné, sociálne). Údaje sú na Potvrdení o zdaniteľnej mzde.",
+      law: "§ 5 zákona 595/2003 Z. z.",
       dpRow: "V. oddiel, r. 36–38",
     });
   }
 
   // ---------- 5. Prenájom (§ 6 ods. 3) ----------
+  const EXEMPT_LIMIT = 500;
   let czdNajom = 0;
+  let rentalTaxableIncome = 0;
+  let exemptLeft = EXEMPT_LIMIT;
   if (input.rental.income > 0) {
-    const exempt = Math.min(500, input.rental.income);
+    const exempt = Math.min(EXEMPT_LIMIT, input.rental.income);
+    exemptLeft = EXEMPT_LIMIT - exempt;
     const adjIncome = input.rental.income - exempt;
+    rentalTaxableIncome = adjIncome;
     const adjExp = input.rental.income > 0 ? (adjIncome / input.rental.income) * input.rental.expenses : 0;
     czdNajom = step({
       id: "najom",
@@ -334,9 +364,68 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
       label: "Čiastkový základ dane z prenájmu (§ 6 ods. 3)",
       value: Math.max(0, adjIncome - adjExp),
       formula: `(${eur(input.rental.income)} − ${eur(exempt)} oslobodené) − výdavky ${eur(input.rental.expenses)} × ${pct(input.rental.income ? adjIncome / input.rental.income : 0)} = ${eur(Math.max(0, adjIncome - adjExp))}`,
-      explain: "Príjem z prenájmu do 500 € ročne je oslobodený. Výdavky sa krátia v pomere zdaniteľného a celkového príjmu.",
+      explain: "Príjem z prenájmu do 500 € ročne je oslobodený (spolu s príležitostnými príjmami podľa § 8 ods. 1 písm. a)). Výdavky sa krátia v pomere zdaniteľného a celkového príjmu.",
       law: "§ 9 ods. 1 písm. g) a § 6 ods. 3 zákona 595/2003 Z. z.",
       dpRow: "VI. oddiel, tab. 1, r. 11 / r. 58–60",
+    });
+  }
+
+  // ---------- 5b. Ostatné príjmy (§ 8) ----------
+  const otherItems = (input.other?.items ?? []).filter((it) => (it.income || 0) > 0 || (it.expenses || 0) > 0);
+  const occItems = otherItems.filter((it) => it.kind === "prilezitostna");
+  const ineItems = otherItems.filter((it) => it.kind !== "prilezitostna");
+  const occIncome = round2(sum(occItems.map((it) => Math.max(0, it.income || 0))));
+  const occExpenses = round2(sum(occItems.map((it) => Math.max(0, it.expenses || 0))));
+  const ineIncome = round2(sum(ineItems.map((it) => Math.max(0, it.income || 0))));
+  const ineExpenses = round2(sum(ineItems.map((it) => Math.max(0, it.expenses || 0))));
+  const otherIncomeTotal = round2(occIncome + ineIncome);
+  let czd8 = 0;
+  let other8TaxableIncome = 0;
+  if (otherIncomeTotal > 0 || occExpenses + ineExpenses > 0) {
+    const occExempt = Math.min(exemptLeft, occIncome);
+    const occTaxable = occIncome - occExempt;
+    const occAdjExp = occIncome > 0 ? (occTaxable / occIncome) * occExpenses : 0;
+    other8TaxableIncome = round2(occTaxable + ineIncome);
+    const exp8 = round2(occAdjExp + ineExpenses);
+    step({
+      id: "ostatnePrijmy",
+      group: "ostatne",
+      label: "Ostatné príjmy (§ 8) – príjmy",
+      value: otherIncomeTotal,
+      editable: false,
+      formula: otherItems.map((it) => `${it.name || (it.kind === "prilezitostna" ? "príležitostná činnosť" : "iný príjem")}: ${eur(it.income || 0)}`).join(" + ") + ` = ${eur(otherIncomeTotal)}`,
+      explain: "Príležitostné činnosti, prenájom hnuteľných vecí a iné ostatné príjmy. Oslobodenia pri predaji nehnuteľnosti/hnuteľnej veci si posúďte sami – zadajte len zdaniteľnú časť.",
+      law: "§ 8 zákona 595/2003 Z. z.",
+    });
+    step({
+      id: "ostatneOslobodenie",
+      group: "ostatne",
+      label: "Oslobodenie 500 € (spolu s prenájmom)",
+      value: occExempt,
+      editable: false,
+      formula: `500 € − využité pri prenájme ${eur(EXEMPT_LIMIT - exemptLeft)} = ${eur(exemptLeft)} k dispozícii; príležitostné príjmy ${eur(occIncome)} → oslobodené ${eur(occExempt)}`,
+      explain: "Príjem z prenájmu (§ 6 ods. 3) a z príležitostných činností a prenájmu hnuteľných vecí (§ 8 ods. 1 písm. a)) je oslobodený do 500 € ročne spolu. Najprv sa uplatní na prenájom, zvyšok na § 8.",
+      law: "§ 9 ods. 1 písm. g) zákona 595/2003 Z. z.",
+    });
+    step({
+      id: "ostatneVydavky",
+      group: "ostatne",
+      label: "Výdavky k ostatným príjmom (pomerne k zdaniteľnej časti)",
+      value: exp8,
+      editable: false,
+      formula: `príležitostné ${eur(occExpenses)} × ${pct(occIncome ? occTaxable / occIncome : 0)} + ostatné ${eur(ineExpenses)} = ${eur(exp8)}`,
+      explain: "Výdavky k príležitostným príjmom sa krátia v pomere zdaniteľného a celkového príjmu (rovnako ako pri prenájme).",
+      law: "§ 8 ods. 1 a § 9 ods. 1 písm. g) zákona 595/2003 Z. z.",
+    });
+    const raw8 = other8TaxableIncome - exp8;
+    czd8 = step({
+      id: "czd8",
+      group: "ostatne",
+      label: "Čiastkový základ dane z ostatných príjmov (§ 8)",
+      value: Math.max(0, raw8),
+      formula: `${eur(other8TaxableIncome)} − ${eur(exp8)} = ${eur(raw8)}${raw8 < 0 ? " → strata, základ 0" : ""}`,
+      explain: "Strata z ostatných príjmov sa neodpočítava od iných príjmov. Základ sa nekráti o nezdaniteľnú časť a zdaní sa progresívne spolu s ostatnými základmi.",
+      law: "§ 8 zákona 595/2003 Z. z.",
     });
   }
 
@@ -413,9 +502,9 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
   });
 
   // ---------- 7. Daň ----------
-  const reducedOk = income <= T.reducedRateLimit.value;
+  const reducedOk = !isEmp && income <= T.reducedRateLimit.value;
   const rateLabel = reducedOk ? "15 %" : "progresívna (19 % / 25 % …)";
-  const rate15 = step({
+  const rate15 = isEmp ? 0 : step({
     id: "sadzba15",
     group: "dan",
     label: "Uplatniť 15 % sadzbu na živnosť (1 = áno, 0 = nie)",
@@ -428,7 +517,7 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
   });
   const use15 = rate15 >= 0.5;
 
-  const progressiveBase = round2(base5 + czdNajom + (use15 ? 0 : base6));
+  const progressiveBase = round2(base5 + czdNajom + czd8 + (use15 ? 0 : base6));
   const prog = progressiveTax(progressiveBase, T);
   let taxProg = 0;
   if (progressiveBase > 0) {
@@ -438,14 +527,14 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
       label: "Daň progresívnou sadzbou",
       value: floor2(prog.tax),
       formula: prog.parts.map((p) => `${eur(p.to - p.from)} × ${pct(p.rate)}`).join(" + ") + ` = ${eur(floor2(prog.tax))}`,
-      explain: `Základ ${eur(progressiveBase)} (${[base5 > 0 && "zamestnanie", czdNajom > 0 && "prenájom", !use15 && base6 > 0 && "živnosť"].filter(Boolean).join(", ")}) sa zdaní po pásmach.`,
+      explain: `Základ ${eur(progressiveBase)} (${[base5 > 0 && "zamestnanie", czdNajom > 0 && "prenájom", czd8 > 0 && "ostatné príjmy § 8", !use15 && base6 > 0 && "živnosť"].filter(Boolean).join(", ")}) sa zdaní po pásmach.`,
       law: "§ 15 písm. a) zákona 595/2003 Z. z.",
       params: T.brackets.filter((b) => b.upTo).map((b) => ({ label: `hranica pásma ${pct(b.rate)}`, param: b.upTo! })),
       dpRow: "r. 80–81",
     });
   }
   let tax15 = 0;
-  if (use15) {
+  if (use15 && !isEmp) {
     tax15 = step({
       id: "dan15",
       group: "dan",
@@ -488,7 +577,7 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
       parts.push(`${ch.name || "dieťa"}: ${eur(chTotal)}`);
     }
     const minIncome = 6 * T.minimalnaMzda.value;
-    const eligible = income + input.employment.gross >= minIncome;
+    const eligible = income + emp.gross >= minIncome;
     if (!eligible) warnings.push({ id: "bonus-income", severity: "warn", text: `Na daňový bonus treba zdaniteľné príjmy aspoň 6 × minimálna mzda (${eur(minIncome)}).` });
     bonus = step({
       id: "bonus",
@@ -510,15 +599,30 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
   const toPay = step({
     id: "danNaUhradu",
     group: "dan",
-    label: afterBonus - input.employment.taxWithheld - input.taxAdvancesPaid + input.employment.bonusPaid >= 0 ? "Daň na úhradu" : "Daňový preplatok / bonus na vyplatenie",
-    value: afterBonus + input.employment.bonusPaid - input.employment.taxWithheld - input.taxAdvancesPaid,
-    formula: `${eur(taxTotal)} − bonus ${eur(bonus)} + bonus vyplatený zamestnávateľom ${eur(input.employment.bonusPaid)} − zrazené preddavky ${eur(input.employment.taxWithheld)} − zaplatené preddavky ${eur(input.taxAdvancesPaid)}`,
+    label: afterBonus - emp.taxWithheld - input.taxAdvancesPaid + emp.bonusPaid >= 0 ? "Daň na úhradu" : "Daňový preplatok / bonus na vyplatenie",
+    value: afterBonus + emp.bonusPaid - emp.taxWithheld - input.taxAdvancesPaid,
+    formula: `${eur(taxTotal)} − bonus ${eur(bonus)} + bonus vyplatený zamestnávateľom ${eur(emp.bonusPaid)} − zrazené preddavky ${eur(emp.taxWithheld)} − zaplatené preddavky ${eur(input.taxAdvancesPaid)}`,
     explain: "Kladná suma = doplatok dane do 31. 3. (alebo do konca odkladu). Záporná = preplatok / bonus, ktorý vám vráti daňový úrad.",
     dpRow: "r. 135 / 136",
   });
 
   // ---------- 9. Nasledujúci rok: odvody, preddavky ----------
-  const next = computeNext(Y, income, czd6, zpPaid, step, warnings, ypNext, yp, taxTotal, T);
+  const next: NextYear = isEmp
+    ? {
+        year: Y + 1,
+        spFromJuly: 0,
+        spVZ: 0,
+        spRegime: "none",
+        zpMonthly: 0,
+        zpVZ: 0,
+        zpSettlement: 0,
+        taxAdvance: { period: "none", amount: 0 },
+        paramsStatus: ypNext ? ypNext.status : "chýbajú",
+      }
+    : computeNext(Y, income, czd6, zpPaid, step, warnings, ypNext, yp, taxTotal, T);
+  if (isEmp) {
+    warnings.push({ id: "emp-insurance", severity: "info", text: "Zdravotné a sociálne poistenie zamestnanca odvádza za vás zamestnávateľ (je už zahrnuté v poistnom zamestnanca na potvrdení)." });
+  }
 
   // ---------- 10. Limity ----------
   const projectMonth = (limit: number): number | null => {
@@ -534,7 +638,7 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
     limits.push({ ...l, exceeded: l.current > l.limit, projectedMonth: l.useProjection ? projectMonth(l.limit) : undefined });
   };
 
-  if (input.expenses.mode === "pausal") {
+  if (!isEmp && input.expenses.mode === "pausal") {
     addLimit({
       id: "pausalCap",
       label: "Strop paušálnych výdavkov",
@@ -546,7 +650,7 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
       useProjection: true,
     });
   }
-  addLimit({
+  if (!isEmp) addLimit({
     id: "rate15",
     label: "Limit pre 15 % sadzbu dane",
     measure: "príjmy",
@@ -579,7 +683,7 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
       param: nextBracket.upTo,
     });
   }
-  if (ypNext) {
+  if (!isEmp && ypNext) {
     const mikro = ypNext.sp.mikro;
     if (mikro?.lowerIncome) {
       // od 7/2026: do 10,5 × ŽM bez povinnosti, potom mikroodvod, nad limitVzniku riadne odvody
@@ -637,7 +741,7 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
     });
   }
   const dph = yp?.dph ?? ypPrev?.dph;
-  if (dph) {
+  if (!isEmp && dph) {
     addLimit({
       id: "dph",
       label: "Registrácia pre DPH",
@@ -661,13 +765,46 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
       });
     }
   }
+  // ---------- Daňové priznanie ----------
+  const filingIncome = round2(income + emp.gross + rentalTaxableIncome + other8TaxableIncome);
+  const filingLimit = round2(T.nczd.value / 2);
+  const hasBusiness = income > 0;
+  const hasRentalTaxable = rentalTaxableIncome > 0;
+  const has8Taxable = other8TaxableIncome > 0;
+  const dpType: FilingInfo["type"] = filingIncome <= 0 ? null : hasBusiness || hasRentalTaxable || has8Taxable ? "B" : "A";
+  const reasons: string[] = [];
+  let mustFile: boolean;
+  let canUseRZ = false;
+  if (dpType === null) {
+    mustFile = false;
+    reasons.push("Nemáte žiadne zdaniteľné príjmy, daňové priznanie podávať nemusíte.");
+  } else if (dpType === "A") {
+    mustFile = false;
+    canUseRZ = true;
+    reasons.push("Máte len príjmy zo závislej činnosti (§ 5), ktoré za vás zdaňuje zamestnávateľ.");
+    reasons.push(`Môžete požiadať zamestnávateľa o ročné zúčtovanie do 15. 2. ${Y + 1}, alebo podať daňové priznanie typ A do 31. 3. ${Y + 1} (napr. ak si chcete uplatniť viac, ako zohľadnil zamestnávateľ).`);
+  } else {
+    mustFile = filingIncome > filingLimit;
+    const parts: string[] = [];
+    if (hasBusiness) parts.push("príjmy z podnikania (§ 6 ods. 1 a 2)");
+    if (hasRentalTaxable) parts.push("zdaniteľný prenájom (§ 6 ods. 3)");
+    if (has8Taxable) parts.push("ostatné príjmy (§ 8)");
+    reasons.push(`Máte ${parts.join(", ")}${emp.gross > 0 ? " popri zamestnaní" : ""}, preto sa podáva typ B.`);
+    reasons.push(
+      mustFile
+        ? `Zdaniteľné príjmy ${eur(filingIncome)} presahujú 50 % nezdaniteľnej časti (${eur(filingLimit)}), daňové priznanie podať musíte.`
+        : `Zdaniteľné príjmy ${eur(filingIncome)} nepresahujú 50 % nezdaniteľnej časti (${eur(filingLimit)}), daňové priznanie podať nemusíte (môžete dobrovoľne, napr. pre bonus alebo preplatok).`,
+    );
+    if (emp.gross > 0) reasons.push("Pri iných príjmoch popri zamestnaní ročné zúčtovanie u zamestnávateľa nie je možné.");
+  }
+  const filing: FilingInfo = { mustFile, type: dpType, canUseRZ, deadline: `31. 3. ${Y + 1}`, reasons };
   addLimit({
     id: "filing",
     label: "Povinnosť podať daňové priznanie",
     measure: "zdaniteľné príjmy",
-    current: round2(income + input.employment.gross + input.rental.income),
-    limit: round2(T.nczd.value / 2),
-    consequence: "Musíte podať daňové priznanie (typ B) do 31. 3.",
+    current: filingIncome,
+    limit: filingLimit,
+    consequence: dpType === "A" ? `Pri príjmoch len zo zamestnania stačí ročné zúčtovanie u zamestnávateľa.` : `Musíte podať daňové priznanie (typ B) do 31. 3. ${Y + 1}.`,
     param: T.nczd,
   });
   if (T.bonusTiers.length && input.children.length) {
@@ -675,7 +812,7 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
       id: "bonusMin",
       label: "Minimálny príjem pre daňový bonus",
       measure: "zdaniteľné príjmy",
-      current: income + input.employment.gross,
+      current: income + emp.gross,
       limit: 6 * T.minimalnaMzda.value,
       consequence: "Nad touto hranicou máte nárok na daňový bonus (je to dolná hranica, ktorú treba dosiahnuť).",
       param: T.minimalnaMzda,
@@ -696,7 +833,11 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
   }
 
   // ---------- 11. Súhrn ----------
-  const net = round2(income - Math.max(0, taxTotal - bonus) - spPaid - zpPaid);
+  const otherNet = round2(round2(input.rental.income - input.rental.expenses) + otherIncomeTotal - occExpenses - ineExpenses);
+  const net = isEmp
+    ? round2(emp.gross - emp.insurance + otherNet - Math.max(0, taxTotal - bonus))
+    : round2(income - Math.max(0, taxTotal - bonus) - spPaid - zpPaid);
+  const summaryIncome = isEmp ? round2(emp.gross + input.rental.income + otherIncomeTotal) : income;
   const stepById = Object.fromEntries(steps.map((s) => [s.id, s]));
   return {
     year: Y,
@@ -707,15 +848,18 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
     limits,
     months,
     next,
+    profile,
+    filing,
     summary: {
-      income,
+      income: summaryIncome,
       tax: taxTotal,
       taxToPay: toPay,
       sp: spPaid,
       zp: zpPaid,
       net,
       netMonthly: round2(net / 12),
-      effectiveRate: income > 0 ? (income - net) / income : 0,
+      effectiveRate: summaryIncome > 0 ? (summaryIncome - net) / summaryIncome : 0,
+      employeeInsurance: emp.insurance,
     },
   };
 }

@@ -39,6 +39,9 @@ const SP_FUNDS: SpFund[] = [
   { name: "rezervný fond", rate: 0.0475 },
 ];
 
+/** dátum poslednej úpravy zabalených sadzieb – staršie „prijaté“ sadzby sa ignorujú */
+export const PARAMS_DATE = "2026-11-15";
+
 export const PARAMS: ParamSet = {
   2024: {
     year: 2024,

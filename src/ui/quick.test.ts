@@ -75,3 +75,25 @@ describe("hranica, od ktorej začnem platiť daň", () => {
     expect(calculate(buildQuickInput({ ...q, income: t.limit + 1 })).summary.tax).toBeGreaterThan(0);
   });
 });
+
+describe("rýchly výpočet – profil zamestnanec", () => {
+  it("príjem = úhrn zo zamestnania, poistné a preddavky z potvrdenia, bez odvodov SZČO", () => {
+    const q = { year: 2026, income: 18000, expenses: null, profile: "zamestnanec" as const, empInsurance: 2556, empWithheld: 1900, rentMonthly: 450, rentMonths: 12, rentExpenses: 600 };
+    const i = buildQuickInput(q);
+    expect(i.profile).toBe("zamestnanec");
+    expect(i.employment.gross).toBe(18000);
+    expect(i.rental.income).toBe(5400);
+    const r = calculate(i);
+    expect(r.summary.sp + r.summary.zp).toBe(0);
+    expect(r.filing.type).toBe("B");
+    const d = toDetailedInput(q, undefined);
+    expect(d.employment.taxWithheld).toBe(1900);
+  });
+});
+
+describe("staircase – schody popiskov limitov", () => {
+  it("v skupine blízkych značiek je prvá najnižšie, ďalšie vyššie; vzdialené na stupni 0", async () => {
+    const { staircase } = await import("./quick");
+    expect(staircase([10, 20, 30, 200, 300, 310], 40)).toEqual([2, 1, 0, 0, 1, 0]);
+  });
+});

@@ -18,6 +18,7 @@ const GROUPS: Record<string, string> = {
   buduci: "Budúci rok",
   zamestnanie: "Zamestnanie",
   najom: "Prenájom",
+  ostatne: "Ostatné príjmy (§ 8)",
 };
 
 const skDate = (iso: string) => {

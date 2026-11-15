@@ -1,3 +1,4 @@
+import { effectiveParams } from "./params/merge";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { calculate, defaultInput } from "./engine/calc";
 import type { CalcInput } from "./engine/types";
@@ -87,7 +88,7 @@ export default function App() {
     if (st.checkParamsOnStart && !st.paramsUrl.includes("OWNER")) {
       fetchParamsUpdate(st.paramsUrl)
         .then((u) => {
-          const merged = { ...PARAMS, ...dataRef.current!.acceptedParams };
+          const merged = effectiveParams(dataRef.current!.acceptedParams, dataRef.current!.acceptedParamsDate);
           if (diffYears(merged, u.years).length > 0) setParamsUpdate(u);
         })
         .catch(() => undefined);
@@ -124,7 +125,7 @@ export default function App() {
     setData((d) => (d ? { ...d, companies: [...d.companies.filter((x) => x.ico !== c.ico), c] } : d));
   }, []);
 
-  const params = useMemo(() => (data ? { ...PARAMS, ...data.acceptedParams } : PARAMS), [data]);
+  const params = useMemo(() => (data ? effectiveParams(data.acceptedParams, data.acceptedParamsDate) : PARAMS), [data]);
 
   const calc = useMemo(() => {
     if (!input) return null;

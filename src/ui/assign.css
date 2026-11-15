@@ -1,0 +1,64 @@
+/* plávajúci odznak „Darujte 2 %“ – vpravo dole, ide so stránkou (nad spodnou lištou Výpočtu) */
+.assign-float {
+  position: fixed;
+  right: 18px;
+  bottom: 84px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: min(340px, calc(100vw - 36px));
+}
+.assign-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px 10px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--good);
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.28);
+  animation: assign-pop 0.35s ease-out;
+}
+.assign-pill:hover { border-color: var(--accent); }
+.assign-heart { font-size: 1.3rem; line-height: 1; }
+.assign-text strong { color: var(--good); }
+.assign-close {
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.assign-close:hover { color: var(--text); border-color: var(--text); }
+.assign-detail {
+  order: -1;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--good);
+  background: var(--card);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.28);
+  font-size: 0.9rem;
+}
+.assign-detail p { margin: 0 0 6px; }
+.assign-detail ul { margin: 0 0 6px; padding-left: 18px; }
+.assign-detail .muted { color: var(--muted); margin: 0; }
+@keyframes assign-pop {
+  from { transform: translateY(12px) scale(0.92); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .assign-pill { animation: none; } }
+@media print { .assign-float { display: none; } }

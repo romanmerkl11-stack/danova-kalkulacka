@@ -221,3 +221,9 @@ Web: https://romanmerkl11-stack.github.io/danova-kalkulacka/ (push do main = nas
 - **Značka neuložených zmien** v lište (`src/ui/unsaved.ts`).
 - **Desktop (Tauri) otestovaný:** build `.app`, štart, výpočet, zápis `data.json` v Application Support OK. Natívne dialógy (export/import súborov, PDF výpis) treba vyskúšať ručne.
 - Fáza 2 = **zamestnanec** (súbeh, prenájom, §8, DP typ A/B) – rozsah v docs/PLAN.md, ďalší krok.
+
+## 10. Fáza 2 – zamestnanec ✅ (15. 11. 2026)
+- `input.profile` / `quick.profile`: **szco | zamestnanec | oboje**. Zamestnanec: bez odvodov SZČO, bez limitov živnosti; viac zamestnávateľov (`employment.items`), §8 ostatné príjmy (`other.items`, spoločné oslobodenie 500 € s prenájmom), `result.filing` (typ A/B, povinnosť, ročné zúčtovanie, termín) + karta „Daňové priznanie“.
+- Rýchly výpočet: suma navrchu kariet, limity pod posuvníkom **v schodoch** (prvý najnižšie) so zvislou čiarkou k číslu, popis len v bubline.
+- 2 %: plávajúci odznak vpravo dole (`AssignNotice` + `assign.css`) na oboch záložkách.
+- **Sadzby majú dátum `PARAMS_DATE` (src/params/data.ts) – pri každej zmene sadzieb ho zvýš a spusti `npm run params`.** Prijaté sadzby staršie ako PARAMS_DATE sa ignorujú (`src/params/merge.ts`), Sadzby ukážu upozornenie.

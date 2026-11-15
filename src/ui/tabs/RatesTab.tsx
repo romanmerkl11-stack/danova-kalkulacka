@@ -1,3 +1,5 @@
+import { acceptedIsStale } from "../../params/merge";
+import { PARAMS_DATE } from "../../params/data";
 import { useMemo, useState } from "react";
 import { eur, pct } from "../../engine/money";
 import { NetDenied } from "../../net/net";
@@ -40,6 +42,8 @@ export function RatesTab({ data, setData, params, defaultYear, update, setUpdate
   const yp = params[year];
   const rows = useMemo(() => (yp ? flattenYear(yp) : []), [yp]);
   const isAccepted = year in data.acceptedParams;
+  const stale = acceptedIsStale(data.acceptedParams, data.acceptedParamsDate);
+  const dropAccepted = () => setData((d) => ({ ...d, acceptedParams: {}, acceptedParamsDate: undefined }));
   const unconfigured = data.settings.paramsUrl.includes("OWNER");
 
   const diffs = useMemo(() => (update ? diffYears(params, update.years) : []), [params, update]);
@@ -66,7 +70,11 @@ export function RatesTab({ data, setData, params, defaultYear, update, setUpdate
     if (!update) return;
     const ys = diffYearsList.filter((y) => checked[y] !== false);
     if (ys.length === 0) return;
-    setData((d) => ({ ...d, acceptedParams: { ...d.acceptedParams, ...Object.fromEntries(ys.map((y) => [y, update.years[y]])) } }));
+    setData((d) => ({
+      ...d,
+      acceptedParams: { ...d.acceptedParams, ...Object.fromEntries(ys.map((y) => [y, update.years[y]])) },
+      acceptedParamsDate: update.publishedAt ?? new Date().toISOString().slice(0, 10),
+    }));
     setAccepted(`Prijaté sadzby pre ${ys.join(", ")}.`);
   };
 
@@ -92,7 +100,15 @@ export function RatesTab({ data, setData, params, defaultYear, update, setUpdate
           </select>
           {yp && <span className={yp.status === "platné" ? "badge" : "badge warn"}>{yp.status}</span>}
         </div>
-        {isAccepted && (
+        {stale && (
+          <div className="box warn">
+            <p style={{ margin: "0 0 8px" }}>
+              Prijaté sadzby{data.acceptedParamsDate ? ` (zo dňa ${data.acceptedParamsDate})` : ""} sú staršie ako sadzby v appke ({PARAMS_DATE}) – používajú sa sadzby z appky.
+            </p>
+            <button type="button" className="ghost" onClick={dropAccepted}>Odstrániť staré prijaté sadzby</button>
+          </div>
+        )}
+        {isAccepted && !stale && (
           <div className="box info">
             <p style={{ margin: "0 0 8px" }}>Používajú sa prijaté aktualizované sadzby.</p>
             <button type="button" className="ghost" onClick={revert}>Vrátiť zabalené sadzby</button>

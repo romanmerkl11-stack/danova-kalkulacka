@@ -16,8 +16,29 @@ export interface ExpenseItem {
   months: number;
 }
 
+export type Profile = "szco" | "zamestnanec" | "oboje";
+
+/** jeden zamestnávateľ (podľa Potvrdenia o zdaniteľnej mzde) */
+export interface EmployerItem {
+  name: string;
+  gross: number;
+  insurance: number;
+  taxWithheld: number;
+  bonusPaid: number;
+}
+
+/** príjem podľa § 8 */
+export interface OtherItem {
+  kind: "prilezitostna" | "ine";
+  name: string;
+  income: number;
+  expenses: number;
+}
+
 export interface CalcInput {
   year: number;
+  /** chýba = "szco" */
+  profile?: Profile;
   income: {
     mode: "annual" | "monthly";
     annual: number;
@@ -40,7 +61,10 @@ export interface CalcInput {
     zpPaid: Month12;
   };
   expenses: { mode: "pausal" | "actual"; actual: number; /** rozpis po riadkoch; actual = súčet */ items?: ExpenseItem[] };
-  employment: { gross: number; insurance: number; taxWithheld: number; bonusPaid: number };
+  /** pri zadaných `items` sa súčty počítajú z nich (plochá časť sa ignoruje) */
+  employment: { gross: number; insurance: number; taxWithheld: number; bonusPaid: number; items?: EmployerItem[] };
+  /** ostatné príjmy § 8 */
+  other?: { items: OtherItem[] };
   rental: {
     income: number;
     /** príjem zadaný mesačne: nájomné × počet mesiacov = income */
@@ -75,7 +99,7 @@ export interface Step {
   overridden?: boolean;
   /** dá sa prepísať */
   editable?: boolean;
-  group: "prijmy" | "dan" | "odvody" | "buduci" | "zamestnanie" | "najom";
+  group: "prijmy" | "dan" | "odvody" | "buduci" | "zamestnanie" | "najom" | "ostatne";
   /** riadok daňového priznania typ B (orientačne) */
   dpRow?: string;
 }
@@ -128,8 +152,19 @@ export interface NextYear {
   paramsStatus: "platné" | "predbežné" | "chýbajú";
 }
 
+export interface FilingInfo {
+  mustFile: boolean;
+  type: "A" | "B" | null;
+  /** zamestnanec s príjmom len podľa § 5 môže požiadať o ročné zúčtovanie u zamestnávateľa (do 15. 2.) */
+  canUseRZ: boolean;
+  deadline: string;
+  reasons: string[];
+}
+
 export interface CalcResult {
   year: number;
+  profile: Profile;
+  filing: FilingInfo;
   taxParamsYear: number;
   steps: Step[];
   stepById: Record<string, Step>;
@@ -146,5 +181,7 @@ export interface CalcResult {
     net: number;
     netMonthly: number;
     effectiveRate: number;
+    /** poistné zamestnanca (je už v základe § 5) */
+    employeeInsurance?: number;
   };
 }

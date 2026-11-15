@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { calculate } from "../../engine/calc";
 import { eur, pct } from "../../engine/money";
 import type { CalcInput, CalcResult } from "../../engine/types";
@@ -8,6 +8,9 @@ import { NumberInput } from "../NumberInput";
 import { formatSkNumber } from "../format";
 import { StepsList } from "../StepsList";
 import { AssignNotice } from "../AssignNotice";
+import { filingHeadline } from "../FilingPanel";
+import { ProfileSwitch } from "../ProfileSwitch";
+import { staircase } from "../quick";
 import { buildQuickInput, contributionLimits, contributionThresholds, incomeLimits, taxStartThreshold, SLIDER_STEP, sliderMax, toDetailedInput, withoutOwnContributions, type QuickState } from "../quick";
 
 interface Props {
@@ -23,8 +26,8 @@ const REGIME = { standard: "", mikro: "mikroodvod", none: "nie ste povinne poist
 
 const Stat = ({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: string }) => (
   <div className={`stat ${tone ?? ""}`}>
-    <div className="stat-label">{label}</div>
     <div className="stat-value">{value}</div>
+    <div className="stat-label">{label}</div>
     {sub && <div className="stat-sub">{sub}</div>}
   </div>
 );
@@ -32,6 +35,18 @@ const Stat = ({ label, value, sub, tone }: { label: string; value: string; sub?:
 export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed }: Props) {
   // plynulé ťahanie slidera: výpočet beží s oneskorenou hodnotou
   const dq = useDeferredValue(quick);
+
+  // šírka posuvníka v px – na rozostúpenie šikmých popiskov limitov
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const [sliderW, setSliderW] = useState(0);
+  useEffect(() => {
+    const el = sliderRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setSliderW(el.clientWidth));
+    ro.observe(el);
+    setSliderW(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
 
   const calc = useMemo(() => {
     try {
@@ -47,9 +62,9 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed 
 
   // hranice „odvody nad minimum“ nezávisia od príjmu → prepočet len pri zmene roka, výdavkov či odvodov
   const thresholds = useMemo(
-    () => [...taxStartThreshold({ ...dq, income: 0 }, params), ...contributionThresholds({ ...dq, income: 0 }, params)],
+    () => [...taxStartThreshold({ ...dq, income: 0 }, params), ...(dq.profile === "zamestnanec" ? [] : contributionThresholds({ ...dq, income: 0 }, params))],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [dq.year, dq.expenses, dq.spH1, dq.spH2, dq.zp, params],
+    [dq.year, dq.expenses, dq.spH1, dq.spH2, dq.zp, dq.profile, dq.empGross, dq.empInsurance, dq.empWithheld, dq.rentMonthly, dq.rentMonths, dq.rentExpenses, params],
   );
 
   const set = (patch: Partial<QuickState>) => onQuick({ ...quick, ...patch });
@@ -76,16 +91,9 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed 
   const max = sliderMax(auto.limits);
   const contrib = contributionLimits(thresholds, quick.income);
   const ticks = [...incomeLimits(auto.limits), ...contrib].sort((x, y) => x.limit - y.limit);
-  // popisky značiek do riadkov tak, aby sa neprekrývali (každý ďalší do prvého riadku, kde je miesto)
-  const LABEL_GAP = 0.14; // približná šírka popisku ako podiel dĺžky posuvníka
-  const rowEnds: number[] = [];
-  const rows: number[] = ticks.map((l) => {
-    const pos = l.limit / max;
-    let r = rowEnds.findIndex((end) => pos - end >= LABEL_GAP);
-    if (r === -1) r = rowEnds.length;
-    rowEnds[r] = pos;
-    return r;
-  });
+  // schody: v hustej skupine prvý popisok najnižšie, ďalšie vyššie (šikmé texty sa tak nekrížia)
+  const steps = staircase(ticks.map((l) => Math.min(1, l.limit / max) * sliderW), 70);
+  const maxStep = Math.max(0, ...steps);
   const s = result.summary;
   const n = result.next;
   const refund = s.taxToPay < 0;
@@ -93,21 +101,28 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed 
   // „spMin“ z enginu je meraný na základe dane – na tejto obrazovke ho nahrádzajú hranice v príjmoch
   const exceeded = [...result.limits.filter((l) => l.exceeded && l.id !== "filing" && l.id !== "spMin"), ...contributionLimits(thresholds, result.summary.income).filter((l) => l.exceeded)];
   const income = Math.min(quick.income, max);
+  const profile = quick.profile ?? "szco";
+  const emp = profile === "zamestnanec";
+  const both = profile === "oboje";
+  const f = result.filing;
 
   return (
     <main className="quick">
+      <div className="quick-profile">
+        <ProfileSwitch value={profile} onChange={(p) => set({ profile: p })} />
+      </div>
       <div className="quick-inputs">
         <section className="card" aria-label="Príjmy">
           <div className="quick-head">
-            <h2>Príjmy za rok</h2>
+            <h2>{emp ? "Úhrn príjmov za rok" : "Príjmy za rok"}</h2>
             <select aria-label="Rok" value={quick.year} onChange={(e) => set({ year: Number(e.target.value) })}>
               {years.map((y) => (
                 <option key={y} value={y}>{y}</option>
               ))}
             </select>
           </div>
-          <NumberInput className="big" ariaLabel="Príjmy za rok" value={quick.income} onChange={(v) => set({ income: Math.max(0, v ?? 0) })} />
-          <div className="slider-wrap" style={{ ["--rows" as string]: Math.max(1, rowEnds.length) }}>
+          <NumberInput className="big" ariaLabel={emp ? "Úhrn príjmov za rok" : "Príjmy za rok"} value={quick.income} onChange={(v) => set({ income: Math.max(0, v ?? 0) })} />
+          <div className="slider-wrap slanted" ref={sliderRef} style={{ ["--steps" as string]: maxStep }}>
             <input
               type="range"
               min={0}
@@ -120,18 +135,18 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed 
             <div className="ticks">
               {ticks.map((l, idx) => {
                 const pos = (x: { limit: number }) => Math.min(1, x.limit / max);
+                const step = steps[idx] ?? 0;
                 const passed = quick.income > l.limit;
-                const row = rows[idx];
                 return (
                   <div
                     key={l.id}
                     className={`tick${passed ? " passed" : ""}${pos(l) < 0.2 ? " tip-left" : pos(l) > 0.8 ? " tip-right" : ""}`}
-                    style={{ left: `${Math.min(100, pos(l) * 100)}%`, ["--row" as string]: row }}
+                    style={{ left: `${Math.min(100, pos(l) * 100)}%`, ["--step" as string]: step }}
                     tabIndex={0}
                     role="note"
                     aria-label={`${l.label}: ${eur(l.limit)}. ${l.consequence}`}
                   >
-                    <span>{formatSkNumber(Math.round(l.limit))} €</span>
+<span>{formatSkNumber(Math.round(l.limit))} €</span>
                     <div className="tick-tip" role="tooltip">
                       <strong>{l.label}</strong>
                       <div className="tick-tip-amount">
@@ -146,7 +161,24 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed 
           </div>
         </section>
 
-        <section className="card" aria-label="Výdavky">
+        {emp && (
+          <section className="card" aria-label="Údaje z potvrdenia a prenájom">
+            <div className="quick-head"><h2>Z potvrdenia o zdaniteľnej mzde</h2></div>
+            <div className="quick-contrib">
+              <NumberInput label="Poistné zamestnanca" allowNull value={quick.empInsurance ?? null} placeholder="0,00" onChange={(v) => set({ empInsurance: v === null ? null : Math.max(0, v) })} />
+              <NumberInput label="Zrazené preddavky na daň" allowNull value={quick.empWithheld ?? null} placeholder="0,00" onChange={(v) => set({ empWithheld: v === null ? null : Math.max(0, v) })} />
+            </div>
+            <p className="note small">Údaje nájdete na Potvrdení od zamestnávateľa. Prázdne pole = 0 €.</p>
+            <div className="quick-head quick-contrib-head"><h2>Prenájom (voliteľné)</h2></div>
+            <div className="quick-contrib">
+              <NumberInput label="Nájomné mesačne" allowNull value={quick.rentMonthly ?? null} placeholder="0,00" onChange={(v) => set({ rentMonthly: v === null ? null : Math.max(0, v) })} />
+              <NumberInput label="Mesiacov" suffix="" allowNull value={quick.rentMonths ?? 12} placeholder="12" onChange={(v) => set({ rentMonths: v === null ? null : Math.min(12, Math.max(0, Math.round(v))) })} />
+              <NumberInput label="Výdavky na prenájom (ročne)" allowNull value={quick.rentExpenses ?? null} placeholder="0,00" onChange={(v) => set({ rentExpenses: v === null ? null : Math.max(0, v) })} />
+            </div>
+          </section>
+        )}
+
+        {!emp && <section className="card" aria-label="Výdavky">
           <div className="quick-head">
             <h2>Výdavky</h2>
             {quick.expenses !== null && (
@@ -181,10 +213,29 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed 
               />
             ))}
           </div>
-        </section>
+          {both && (
+            <div className="quick-emp-block">
+              <div className="quick-head quick-contrib-head"><h2>Zamestnanie</h2></div>
+              <div className="quick-contrib">
+                <NumberInput label="Úhrn príjmov" allowNull value={quick.empGross ?? null} placeholder="0,00" onChange={(v) => set({ empGross: v === null ? null : Math.max(0, v) })} />
+                <NumberInput label="Poistné zamestnanca" allowNull value={quick.empInsurance ?? null} placeholder="0,00" onChange={(v) => set({ empInsurance: v === null ? null : Math.max(0, v) })} />
+                <NumberInput label="Zrazené preddavky" allowNull value={quick.empWithheld ?? null} placeholder="0,00" onChange={(v) => set({ empWithheld: v === null ? null : Math.max(0, v) })} />
+              </div>
+              <p className="note small">Z Potvrdenia o zdaniteľnej mzde. Prázdne pole = 0 €.</p>
+            </div>
+          )}
+        </section>}
       </div>
 
       <section className="card" aria-label="Výsledok">
+        {emp ? (
+          <div className="stats">
+            <Stat label="Daň" value={eur(s.tax)} tone="main" />
+            <Stat label={refund ? "Preplatok" : "Nedoplatok"} value={eur(Math.abs(s.taxToPay))} sub={refund ? "vráti vám daňový úrad / zamestnávateľ" : "doplatíte pri daňovom priznaní"} tone={refund ? "good" : "main"} />
+            <Stat label="Daňové priznanie" value={f.type ? `typ ${f.type}` : "netreba"} sub={filingHeadline(result)} />
+            <Stat label="Čistý príjem ročne" value={eur(s.net)} sub={`${eur(s.netMonthly)} mesačne`} tone="good" />
+          </div>
+        ) : (
         <div className="stats">
           <Stat label="Daň" value={eur(s.tax)} sub={Math.abs(s.taxToPay - s.tax) > 0.005 ? `${refund ? "Preplatok" : "Na úhradu"}: ${eur(Math.abs(s.taxToPay))}` : undefined} tone="main" />
           <Stat label={`Odvody za ${result.year}`} value={eur(s.sp + s.zp)} sub={`SP ${eur(s.sp)} · ZP ${eur(s.zp)}`} />
@@ -206,6 +257,7 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed 
             <Stat label="Čistý príjem ročne" value="—" sub="Zadajte príjmy za rok – odvody sa platia aj bez príjmov." tone="good" />
           )}
         </div>
+        )}
       </section>
 
       <AssignNotice tax={result.summary.tax} year={result.year} />

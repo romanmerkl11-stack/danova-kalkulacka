@@ -38,6 +38,19 @@ function mergeInput(raw: Record<string, unknown>): CalcInput {
     children: Array.isArray(raw.children) ? (raw.children as CalcInput["children"]) : [],
     overrides: isObj(raw.overrides) ? (raw.overrides as Record<string, number>) : {},
   };
+  if (out.profile !== "szco" && out.profile !== "zamestnanec" && out.profile !== "oboje") out.profile = "szco";
+  if (out.employment.items !== undefined && !Array.isArray(out.employment.items)) delete out.employment.items;
+  if (raw.other !== undefined) {
+    const items = isObj(raw.other) && Array.isArray(raw.other.items) ? (raw.other.items as unknown[]).filter(isObj) : [];
+    out.other = {
+      items: items.map((it) => ({
+        kind: it.kind === "ine" ? "ine" : "prilezitostna",
+        name: str(it.name),
+        income: num(it.income),
+        expenses: num(it.expenses),
+      })),
+    };
+  }
   const fix12 = (a: unknown, fb: (number | null)[]) =>
     Array.isArray(a) ? Array.from({ length: 12 }, (_, i) => (typeof a[i] === "number" ? (a[i] as number) : null)) : fb;
   out.income.monthly = fix12(out.income.monthly, d.income.monthly);

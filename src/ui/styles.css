@@ -349,3 +349,40 @@ ul.params { margin: 6px 0 0; padding-left: 18px; }
 .rental-income-row { align-items: flex-end; gap: 10px; }
 .rental-income-row > .field:first-child { flex: 1; }
 .months-field { width: 5.5rem; }
+
+/* prepínač profilu */
+.seg { display: flex; flex-wrap: wrap; gap: 0; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.seg button { flex: 1 1 auto; border: none; border-radius: 0; background: transparent; color: var(--text); padding: 6px 10px; cursor: pointer; border-right: 1px solid var(--border); }
+.seg button:last-child { border-right: none; }
+.seg button.active { background: var(--accent); color: var(--accent-text); font-weight: 600; }
+.seg-quick { margin: 0 0 10px; }
+
+/* zamestnávatelia / ostatné príjmy */
+.employer-row { display: grid; gap: 6px; padding: 10px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 8px; }
+.employer-head { display: flex; gap: 6px; align-items: center; }
+.employer-head input, .employer-head select { flex: 1; min-width: 0; }
+
+/* daňové priznanie */
+.filing-headline { font-size: 1.1rem; font-weight: 700; margin: 0 0 8px; }
+.filing-reasons { margin: 0 0 10px; padding-left: 1.2rem; }
+.quick-emp-block { display: grid; gap: 4px; margin-top: 10px; }
+
+/* Rýchly výpočet: popisky limitov v schodoch – v hustej skupine prvý najnižšie, ďalšie vyššie;
+   zvislá čiarka vedie od značky k jej sume */
+.slider-wrap.slanted { padding-bottom: calc(30px + var(--steps, 0) * 16px); }
+.slider-wrap.slanted .tick::before { height: calc(17px + var(--step, 0) * 16px); width: 1px; }
+.slider-wrap.slanted .tick.passed::before { width: 2px; }
+.slider-wrap.slanted .tick span {
+  position: absolute; left: 3px; top: calc(10px + var(--step, 0) * 16px); margin: 0;
+  white-space: nowrap; font-size: 0.74rem; line-height: 1.2;
+}
+.slider-wrap.slanted .tick.tip-right span { left: auto; right: 3px; }
+.slider-wrap.slanted .tick-tip { top: calc(26px + var(--step, 0) * 16px); }
+@media (max-width: 640px) { .slider-wrap.slanted { padding-bottom: 20px; } }
+
+/* karty výsledkov: suma navrchu (rovnaká výška), popis pod ňou */
+.stat { display: flex; flex-direction: column; gap: 2px; }
+.stat .stat-label { order: 0; }
+
+/* rovnaká výška hlavičiek kariet → polia s číslami v rovnakej výške */
+.quick .quick-head { min-height: 42px; margin-bottom: 8px; }

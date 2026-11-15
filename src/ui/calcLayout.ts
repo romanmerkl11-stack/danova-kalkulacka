@@ -9,6 +9,7 @@ export interface CardDef {
 
 export const CALC_CARDS: CardDef[] = [
   { id: "card-steps", title: "Postup výpočtu", short: "Postup" },
+  { id: "card-filing", title: "Daňové priznanie", short: "DP" },
   { id: "card-months", title: "Odvody po mesiacoch", short: "Mesiace" },
   { id: "card-summary", title: "Súhrn", short: "Súhrn" },
   { id: "card-limits", title: "Rezerva do limitov", short: "Limity" },

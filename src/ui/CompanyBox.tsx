@@ -11,11 +11,12 @@ interface Props {
   onIco: (ico: string) => void;
   company: Company | null;
   onFound: (c: Company) => void;
+  title?: string;
 }
 
 const MIN_NAME = 3;
 
-export function CompanyBox({ nickname, onNickname, ico, onIco, company, onFound }: Props) {
+export function CompanyBox({ nickname, onNickname, ico, onIco, company, onFound, title = "Podnikateľ" }: Props) {
   const [query, setQuery] = useState(ico);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -85,7 +86,7 @@ export function CompanyBox({ nickname, onNickname, ico, onIco, company, onFound 
   return (
     <Card
       id="card-company"
-      title="Podnikateľ"
+      title={title}
       className="company-card"
       actions={
         <button
