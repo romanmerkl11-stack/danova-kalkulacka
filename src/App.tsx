@@ -36,6 +36,8 @@ interface Pending {
 export default function App() {
   const [data, setData] = useState<AppData | null>(null);
   const [tab, setTab] = useState<Tab>("Rýchly výpočet");
+  // úzke okno: záložky v rozbaľovacom menu ☰
+  const [menuOpen, setMenuOpen] = useState(false);
   const [ico, setIcoState] = useState("");
   const [currentCalcId, setCurrentCalcId] = useState<string | null>(null);
   const [paramsUpdate, setParamsUpdate] = useState<ParamsUpdate | null>(null);
@@ -229,9 +231,23 @@ export default function App() {
             )
           }
         />
-        <nav className="tabs" role="tablist" aria-label="Sekcie">
+        <button type="button" className="menu-btn" aria-expanded={menuOpen} aria-controls="main-tabs" onClick={() => setMenuOpen(!menuOpen)}>
+          <span className="menu-icon" aria-hidden="true">☰</span>
+          {tab}
+        </button>
+        <nav id="main-tabs" className={`tabs${menuOpen ? " open" : ""}`} role="tablist" aria-label="Sekcie">
           {TABS.map((t) => (
-            <button key={t} type="button" role="tab" aria-selected={tab === t} className={tab === t ? "tab active" : "tab"} onClick={() => setTab(t)}>
+            <button
+              key={t}
+              type="button"
+              role="tab"
+              aria-selected={tab === t}
+              className={tab === t ? "tab active" : "tab"}
+              onClick={() => {
+                setTab(t);
+                setMenuOpen(false);
+              }}
+            >
               {t}
             </button>
           ))}

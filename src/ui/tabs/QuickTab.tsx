@@ -136,7 +136,7 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed 
                 return (
                   <div
                     key={l.id}
-                    className={`tick${passed ? " passed" : ""}${pos(l) < 0.2 ? " tip-left" : pos(l) > 0.8 ? " tip-right" : ""}`}
+                    className={`tick${passed ? " passed" : ""}${pos(l) < 0.2 ? " tip-left" : pos(l) > 0.8 ? " tip-right" : ""}${pos(l) * sliderW + 64 > sliderW ? " label-right" : ""}`}
                     style={{ left: `${Math.min(100, pos(l) * 100)}%`, ["--step" as string]: step }}
                     tabIndex={0}
                     role="note"
