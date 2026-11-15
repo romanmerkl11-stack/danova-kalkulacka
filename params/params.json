@@ -1,0 +1,765 @@
+{
+ "publishedAt": "2026-11-15",
+ "years": {
+  "2024": {
+   "year": 2024,
+   "status": "platné",
+   "tax": {
+    "zivotneMinimum": {
+     "value": 268.88,
+     "validFrom": "2023-07-01",
+     "verified": true,
+     "note": "ŽM platné k 1. 1. 2024"
+    },
+    "nczd": {
+     "value": 5646.48,
+     "validFrom": "2024-01-01",
+     "verified": true,
+     "note": "21 × ŽM"
+    },
+    "nczdFullUpTo": {
+     "value": 24952.06,
+     "validFrom": "2024-01-01",
+     "verified": true,
+     "note": "92,8 × ŽM"
+    },
+    "nczdReduceConst": {
+     "value": 11884.5,
+     "validFrom": "2024-01-01",
+     "verified": true,
+     "note": "44,2 × ŽM"
+    },
+    "nczdReduceDivisor": 4,
+    "spouse": {
+     "value": 5162.49,
+     "validFrom": "2024-01-01",
+     "verified": true,
+     "note": "19,2 × ŽM"
+    },
+    "spouseFullUpTo": {
+     "value": 47537.98,
+     "validFrom": "2024-01-01",
+     "verified": true,
+     "note": "176,8 × ŽM"
+    },
+    "ddsMax": {
+     "value": 180,
+     "validFrom": "2024-01-01",
+     "verified": true
+    },
+    "brackets": [
+     {
+      "upTo": {
+       "value": 47537.98,
+       "validFrom": "2024-01-01",
+       "verified": true,
+       "note": "176,8 × ŽM"
+      },
+      "rate": 0.19
+     },
+     {
+      "upTo": null,
+      "rate": 0.25
+     }
+    ],
+    "reducedRate": 0.15,
+    "reducedRateLimit": {
+     "value": 49790,
+     "validFrom": "2024-01-01",
+     "verified": true,
+     "note": "príjmy § 6 ods. 1 a 2 do 49 790 €"
+    },
+    "minTaxLevied": {
+     "value": 17,
+     "validFrom": "2024-01-01",
+     "verified": true
+    },
+    "pausalRate": 0.6,
+    "pausalCap": {
+     "value": 20000,
+     "validFrom": "2023-01-01",
+     "verified": true,
+     "source": "https://podpora.financnasprava.sk/270033-Výdavky-percentom-z-príjmov-"
+    },
+    "bonusTiers": [
+     {
+      "maxAge": 18,
+      "monthly": {
+       "value": 140,
+       "validFrom": "2024-01-01",
+       "verified": true
+      }
+     },
+     {
+      "maxAge": 25,
+      "monthly": {
+       "value": 50,
+       "validFrom": "2024-01-01",
+       "verified": true
+      }
+     }
+    ],
+    "bonusReductionThreshold": null,
+    "minimalnaMzda": {
+     "value": 750,
+     "validFrom": "2024-01-01",
+     "verified": true
+    },
+    "advanceQuarterly": {
+     "value": 5000,
+     "validFrom": "2024-01-01",
+     "verified": true
+    },
+    "advanceMonthly": {
+     "value": 16600,
+     "validFrom": "2024-01-01",
+     "verified": true
+    }
+   },
+   "sp": {
+    "priemernaMzda": {
+     "value": 1304,
+     "validFrom": "2024-01-01",
+     "verified": true,
+     "note": "priemerná mesačná mzda v SR za rok 2022"
+    },
+    "minVZ": {
+     "value": 652,
+     "validFrom": "2024-01-01",
+     "verified": true,
+     "source": "https://www.podnikajte.sk/socialne-a-zdravotne-odvody/hranica-prijmov-platenie-odvodov-2022",
+     "note": "50 % priemernej mzdy 2022"
+    },
+    "minPoistne": {
+     "value": 216.13,
+     "validFrom": "2024-01-01",
+     "verified": true
+    },
+    "maxVZ": {
+     "value": 14344,
+     "validFrom": "2024-01-01",
+     "verified": false,
+     "note": "11 × priemerná mzda 2022 – overiť"
+    },
+    "funds": [
+     {
+      "name": "nemocenské",
+      "rate": 0.044
+     },
+     {
+      "name": "starobné",
+      "rate": 0.18
+     },
+     {
+      "name": "invalidné",
+      "rate": 0.06
+     },
+     {
+      "name": "rezervný fond",
+      "rate": 0.0475
+     }
+    ],
+    "limitVzniku": {
+     "value": 7824,
+     "validFrom": "2024-07-01",
+     "verified": true,
+     "note": "príjmy za rok 2023 (12 × 652 €)"
+    },
+    "koeficient": 1.486
+   },
+   "zp": {
+    "rate": 0.15,
+    "minVZ": {
+     "value": 652,
+     "validFrom": "2024-01-01",
+     "verified": true
+    },
+    "minPreddavok": {
+     "value": 97.8,
+     "validFrom": "2024-01-01",
+     "verified": true
+    },
+    "koeficient": 1.486
+   },
+   "dph": {
+    "registration": {
+     "value": 49790,
+     "validFrom": "2024-01-01",
+     "verified": true,
+     "note": "obrat za 12 po sebe idúcich mesiacov"
+    },
+    "immediate": null,
+    "note": "Do 31. 12. 2024 sa obrat sledoval za 12 po sebe idúcich mesiacov."
+   }
+  },
+  "2025": {
+   "year": 2025,
+   "status": "platné",
+   "tax": {
+    "zivotneMinimum": {
+     "value": 273.99,
+     "validFrom": "2024-07-01",
+     "verified": true,
+     "source": "https://www.podnikajte.sk/dan-z-prijmov/nezdanitelne-casti-zakladu-dane-2025"
+    },
+    "nczd": {
+     "value": 5753.79,
+     "validFrom": "2025-01-01",
+     "verified": true,
+     "source": "https://www.podnikajte.sk/dan-z-prijmov/nezdanitelne-casti-zakladu-dane-2025",
+     "note": "21 × ŽM"
+    },
+    "nczdFullUpTo": {
+     "value": 25426.27,
+     "validFrom": "2025-01-01",
+     "verified": true,
+     "source": "https://www.podnikajte.sk/dan-z-prijmov/nezdanitelne-casti-zakladu-dane-2025",
+     "note": "92,8 × ŽM"
+    },
+    "nczdReduceConst": {
+     "value": 12110.36,
+     "validFrom": "2025-01-01",
+     "verified": true,
+     "source": "https://www.podnikajte.sk/dan-z-prijmov/nezdanitelne-casti-zakladu-dane-2025",
+     "note": "44,2 × ŽM"
+    },
+    "nczdReduceDivisor": 4,
+    "spouse": {
+     "value": 5260.6,
+     "validFrom": "2025-01-01",
+     "verified": true,
+     "source": "https://www.podnikajte.sk/dan-z-prijmov/nezdanitelne-casti-zakladu-dane-2025",
+     "note": "19,2 × ŽM"
+    },
+    "spouseFullUpTo": {
+     "value": 48441.43,
+     "validFrom": "2025-01-01",
+     "verified": true,
+     "note": "176,8 × ŽM"
+    },
+    "ddsMax": {
+     "value": 180,
+     "validFrom": "2025-01-01",
+     "verified": true
+    },
+    "brackets": [
+     {
+      "upTo": {
+       "value": 48441.43,
+       "validFrom": "2025-01-01",
+       "verified": true,
+       "note": "176,8 × ŽM"
+      },
+      "rate": 0.19
+     },
+     {
+      "upTo": null,
+      "rate": 0.25
+     }
+    ],
+    "reducedRate": 0.15,
+    "reducedRateLimit": {
+     "value": 100000,
+     "validFrom": "2025-01-01",
+     "verified": true,
+     "note": "zvýšené zo 60 000 € od 1. 1. 2025"
+    },
+    "minTaxLevied": {
+     "value": 17,
+     "validFrom": "2025-01-01",
+     "verified": true
+    },
+    "pausalRate": 0.6,
+    "pausalCap": {
+     "value": 20000,
+     "validFrom": "2023-01-01",
+     "verified": true,
+     "source": "https://podpora.financnasprava.sk/270033-Výdavky-percentom-z-príjmov-"
+    },
+    "bonusTiers": [
+     {
+      "maxAge": 15,
+      "monthly": {
+       "value": 100,
+       "validFrom": "2025-01-01",
+       "verified": true
+      }
+     },
+     {
+      "maxAge": 18,
+      "monthly": {
+       "value": 50,
+       "validFrom": "2025-01-01",
+       "verified": true
+      }
+     }
+    ],
+    "bonusReductionThreshold": {
+     "value": 2145,
+     "validFrom": "2025-01-01",
+     "verified": false,
+     "note": "krátenie 1/10 z rozdielu – overiť"
+    },
+    "minimalnaMzda": {
+     "value": 816,
+     "validFrom": "2025-01-01",
+     "verified": true
+    },
+    "advanceQuarterly": {
+     "value": 5000,
+     "validFrom": "2025-01-01",
+     "verified": true
+    },
+    "advanceMonthly": {
+     "value": 16600,
+     "validFrom": "2025-01-01",
+     "verified": true
+    }
+   },
+   "sp": {
+    "priemernaMzda": {
+     "value": 1430,
+     "validFrom": "2025-01-01",
+     "verified": true,
+     "source": "https://www.podnikajte.sk/socialne-a-zdravotne-odvody/odvody-szco-od-1-1-2025",
+     "note": "priemerná mesačná mzda v SR za rok 2023"
+    },
+    "minVZ": {
+     "value": 715,
+     "validFrom": "2025-01-01",
+     "verified": true,
+     "source": "https://www.podnikajte.sk/socialne-a-zdravotne-odvody/odvody-szco-od-1-1-2025",
+     "note": "50 % priemernej mzdy 2023"
+    },
+    "minPoistne": {
+     "value": 237.02,
+     "validFrom": "2025-01-01",
+     "verified": true,
+     "source": "https://www.podnikajte.sk/socialne-a-zdravotne-odvody/odvody-szco-od-1-1-2025"
+    },
+    "maxVZ": {
+     "value": 15730,
+     "validFrom": "2025-01-01",
+     "verified": true,
+     "source": "https://www.podnikajte.sk/socialne-a-zdravotne-odvody/odvody-szco-od-1-1-2025",
+     "note": "11 × priemerná mzda 2023"
+    },
+    "funds": [
+     {
+      "name": "nemocenské",
+      "rate": 0.044
+     },
+     {
+      "name": "starobné",
+      "rate": 0.18
+     },
+     {
+      "name": "invalidné",
+      "rate": 0.06
+     },
+     {
+      "name": "rezervný fond",
+      "rate": 0.0475
+     }
+    ],
+    "limitVzniku": {
+     "value": 8580,
+     "validFrom": "2025-07-01",
+     "verified": true,
+     "note": "príjmy za rok 2024 (12 × 715 €)"
+    },
+    "koeficient": 1.486
+   },
+   "zp": {
+    "rate": 0.15,
+    "minVZ": {
+     "value": 715,
+     "validFrom": "2025-01-01",
+     "verified": true,
+     "source": "https://www.podnikajte.sk/socialne-a-zdravotne-odvody/odvody-szco-od-1-1-2025"
+    },
+    "minPreddavok": {
+     "value": 107.25,
+     "validFrom": "2025-01-01",
+     "verified": true,
+     "source": "https://www.podnikajte.sk/socialne-a-zdravotne-odvody/odvody-szco-od-1-1-2025"
+    },
+    "koeficient": 1.486
+   },
+   "dph": {
+    "registration": {
+     "value": 50000,
+     "validFrom": "2025-01-01",
+     "verified": true,
+     "source": "https://www.podnikajte.sk/dan-z-pridanej-hodnoty/registracia-pre-dph-od-2025",
+     "note": "obrat za kalendárny rok → platiteľ od 1. 1. nasledujúceho roka"
+    },
+    "immediate": {
+     "value": 62500,
+     "validFrom": "2025-01-01",
+     "verified": true,
+     "source": "https://www.podnikajte.sk/dan-z-pridanej-hodnoty/registracia-pre-dph-od-2025",
+     "note": "prekročenie v bežnom roku → platiteľ dňom dodania, ktorým sa limit prekročil"
+    }
+   }
+  },
+  "2026": {
+   "year": 2026,
+   "status": "platné",
+   "tax": {
+    "zivotneMinimum": {
+     "value": 284.13,
+     "validFrom": "2025-07-01",
+     "verified": true,
+     "source": "https://podpora.financnasprava.sk/260857-Nezdaniteľná-časť-základu-dane-na-daňovníka-za-rok-2026"
+    },
+    "nczd": {
+     "value": 5966.73,
+     "validFrom": "2026-01-01",
+     "verified": true,
+     "source": "https://podpora.financnasprava.sk/260857-Nezdaniteľná-časť-základu-dane-na-daňovníka-za-rok-2026",
+     "note": "21 × ŽM"
+    },
+    "nczdFullUpTo": {
+     "value": 26083.13,
+     "validFrom": "2026-01-01",
+     "verified": true,
+     "source": "https://podpora.financnasprava.sk/260857-Nezdaniteľná-časť-základu-dane-na-daňovníka-za-rok-2026",
+     "note": "91,8 × ŽM"
+    },
+    "nczdReduceConst": {
+     "value": 14661.11,
+     "validFrom": "2026-01-01",
+     "verified": true,
+     "source": "https://podpora.financnasprava.sk/260857-Nezdaniteľná-časť-základu-dane-na-daňovníka-za-rok-2026",
+     "note": "51,6 × ŽM; krátenie ZD/3 (konsolidácia 2026)"
+    },
+    "nczdReduceDivisor": 3,
+    "spouse": {
+     "value": 5455.3,
+     "validFrom": "2026-01-01",
+     "verified": true,
+     "source": "https://www.podnikajte.sk/dan-z-prijmov/progresivne-zdanenie-prijmov-fyzickych-osob-od-2026",
+     "note": "19,2 × ŽM"
+    },
+    "spouseFullUpTo": {
+     "value": 43983.32,
+     "validFrom": "2026-01-01",
+     "verified": true,
+     "source": "https://www.podnikajte.sk/dan-z-prijmov/progresivne-zdanenie-prijmov-fyzickych-osob-od-2026"
+    },
+    "ddsMax": {
+     "value": 180,
+     "validFrom": "2026-01-01",
+     "verified": true
+    },
+    "brackets": [
+     {
+      "upTo": {
+       "value": 43983.32,
+       "validFrom": "2026-01-01",
+       "verified": true,
+       "source": "https://www.podnikajte.sk/dan-z-prijmov/progresivne-zdanenie-prijmov-fyzickych-osob-od-2026",
+       "note": "154,8 × ŽM"
+      },
+      "rate": 0.19
+     },
+     {
+      "upTo": {
+       "value": 60349.21,
+       "validFrom": "2026-01-01",
+       "verified": true,
+       "source": "https://www.podnikajte.sk/dan-z-prijmov/progresivne-zdanenie-prijmov-fyzickych-osob-od-2026",
+       "note": "212,4 × ŽM"
+      },
+      "rate": 0.25
+     },
+     {
+      "upTo": {
+       "value": 75010.32,
+       "validFrom": "2026-01-01",
+       "verified": true,
+       "source": "https://www.podnikajte.sk/dan-z-prijmov/progresivne-zdanenie-prijmov-fyzickych-osob-od-2026",
+       "note": "264 × ŽM"
+      },
+      "rate": 0.3
+     },
+     {
+      "upTo": null,
+      "rate": 0.35
+     }
+    ],
+    "reducedRate": 0.15,
+    "reducedRateLimit": {
+     "value": 100000,
+     "validFrom": "2025-01-01",
+     "verified": true,
+     "source": "https://www.podnikajte.sk/dan-z-prijmov/progresivne-zdanenie-prijmov-fyzickych-osob-od-2026"
+    },
+    "minTaxLevied": {
+     "value": 17,
+     "validFrom": "2026-01-01",
+     "verified": true
+    },
+    "pausalRate": 0.6,
+    "pausalCap": {
+     "value": 20000,
+     "validFrom": "2023-01-01",
+     "verified": true,
+     "source": "https://podpora.financnasprava.sk/270033-Výdavky-percentom-z-príjmov-"
+    },
+    "bonusTiers": [
+     {
+      "maxAge": 15,
+      "monthly": {
+       "value": 100,
+       "validFrom": "2026-01-01",
+       "verified": true,
+       "source": "https://podpora.financnasprava.sk/549090-Daňový-bonus-na-vyživované-dieťa-v-roku-2026"
+      }
+     },
+     {
+      "maxAge": 18,
+      "monthly": {
+       "value": 50,
+       "validFrom": "2026-01-01",
+       "verified": true,
+       "source": "https://podpora.financnasprava.sk/549090-Daňový-bonus-na-vyživované-dieťa-v-roku-2026"
+      }
+     }
+    ],
+    "bonusReductionThreshold": {
+     "value": 2286,
+     "validFrom": "2026-01-01",
+     "verified": true,
+     "source": "https://podpora.financnasprava.sk/549090-Daňový-bonus-na-vyživované-dieťa-v-roku-2026",
+     "note": "bonus sa kráti o 1/10 × (mesačný ZD − 2 286 €)"
+    },
+    "minimalnaMzda": {
+     "value": 915,
+     "validFrom": "2026-01-01",
+     "verified": false,
+     "note": "overiť"
+    },
+    "advanceQuarterly": {
+     "value": 5000,
+     "validFrom": "2026-01-01",
+     "verified": true
+    },
+    "advanceMonthly": {
+     "value": 16600,
+     "validFrom": "2026-01-01",
+     "verified": true
+    }
+   },
+   "sp": {
+    "priemernaMzda": {
+     "value": 1524,
+     "validFrom": "2026-01-01",
+     "verified": true,
+     "source": "https://www.socpoist.sk/news/nove-vymeriavacie-zaklady-pre-platenie-poistneho-od-1-januara-2026",
+     "note": "priemerná mesačná mzda v SR za rok 2024"
+    },
+    "minVZ": {
+     "value": 914.4,
+     "validFrom": "2026-01-01",
+     "verified": true,
+     "source": "https://www.socpoist.sk/news/nove-vymeriavacie-zaklady-pre-platenie-poistneho-od-1-januara-2026",
+     "note": "60 % priemernej mzdy 2024 (konsolidácia 2026)"
+    },
+    "minPoistne": {
+     "value": 303.11,
+     "validFrom": "2026-01-01",
+     "verified": true,
+     "source": "https://www.socpoist.sk/news/nove-vymeriavacie-zaklady-pre-platenie-poistneho-od-1-januara-2026"
+    },
+    "maxVZ": {
+     "value": 16764,
+     "validFrom": "2026-01-01",
+     "verified": true,
+     "source": "https://www.socpoist.sk/news/nove-vymeriavacie-zaklady-pre-platenie-poistneho-od-1-januara-2026",
+     "note": "11 × priemerná mzda 2024"
+    },
+    "funds": [
+     {
+      "name": "nemocenské",
+      "rate": 0.044
+     },
+     {
+      "name": "starobné",
+      "rate": 0.18
+     },
+     {
+      "name": "invalidné",
+      "rate": 0.06
+     },
+     {
+      "name": "rezervný fond",
+      "rate": 0.0475
+     }
+    ],
+    "limitVzniku": {
+     "value": 9144,
+     "validFrom": "2026-07-01",
+     "verified": true,
+     "source": "https://www.socpoist.sk/socialne-poistenie/platenie-poistneho/poistne-szco-od-1-jula-2026-mikroodvod",
+     "note": "príjmy za rok 2025 (12 × 762 €)"
+    },
+    "koeficient": 1.486,
+    "mikro": {
+     "vz": {
+      "value": 396.24,
+      "validFrom": "2026-07-01",
+      "verified": true,
+      "source": "https://www.socpoist.sk/socialne-poistenie/platenie-poistneho/poistne-szco-od-1-jula-2026-mikroodvod",
+      "note": "osobitný vymeriavací základ",
+      "validTo": "2026-12-31"
+     },
+     "poistne": {
+      "value": 131.34,
+      "validFrom": "2026-07-01",
+      "verified": true,
+      "source": "https://www.socpoist.sk/socialne-poistenie/platenie-poistneho/poistne-szco-od-1-jula-2026-mikroodvod",
+      "note": "mikroodvod",
+      "validTo": "2026-12-31"
+     },
+     "lowerIncome": {
+      "value": 2876.9,
+      "validFrom": "2026-07-01",
+      "verified": false,
+      "note": "pod touto sumou príjmov povinnosť nevzniká – overiť"
+     }
+    }
+   },
+   "zp": {
+    "rate": 0.16,
+    "minVZ": {
+     "value": 762,
+     "validFrom": "2026-01-01",
+     "verified": true,
+     "source": "https://www.netfinancie.sk/zdravotne-poistenie/szco_vymeriavacie_zaklady_a_preddavky_poistneho_2026.pdf",
+     "note": "50 % priemernej mzdy 2024"
+    },
+    "minPreddavok": {
+     "value": 121.92,
+     "validFrom": "2026-01-01",
+     "verified": true,
+     "source": "https://www.netfinancie.sk/zdravotne-poistenie/szco_vymeriavacie_zaklady_a_preddavky_poistneho_2026.pdf"
+    },
+    "koeficient": 1.486
+   },
+   "dph": {
+    "registration": {
+     "value": 50000,
+     "validFrom": "2025-01-01",
+     "verified": true,
+     "source": "https://www.podnikajte.sk/dan-z-pridanej-hodnoty/registracia-pre-dph-od-2025"
+    },
+    "immediate": {
+     "value": 62500,
+     "validFrom": "2025-01-01",
+     "verified": true,
+     "source": "https://www.podnikajte.sk/dan-z-pridanej-hodnoty/registracia-pre-dph-od-2025"
+    }
+   }
+  },
+  "2027": {
+   "year": 2027,
+   "status": "predbežné",
+   "tax": null,
+   "sp": {
+    "priemernaMzda": {
+     "value": 1620,
+     "validFrom": "2027-01-01",
+     "verified": false,
+     "source": "https://www.socpoist.sk/socialne-poistenie/platenie-poistneho/poistne-szco-od-1-jula-2026-mikroodvod",
+     "note": "priemerná mzda 2025 – odvodené zo súm Sociálnej poisťovne"
+    },
+    "minVZ": {
+     "value": 972,
+     "validFrom": "2027-01-01",
+     "verified": false,
+     "note": "60 % z 1 620 €"
+    },
+    "minPoistne": {
+     "value": 322.21,
+     "validFrom": "2027-01-01",
+     "verified": false
+    },
+    "maxVZ": {
+     "value": 17820,
+     "validFrom": "2027-01-01",
+     "verified": false,
+     "note": "11 × 1 620 €"
+    },
+    "funds": [
+     {
+      "name": "nemocenské",
+      "rate": 0.044
+     },
+     {
+      "name": "starobné",
+      "rate": 0.18
+     },
+     {
+      "name": "invalidné",
+      "rate": 0.06
+     },
+     {
+      "name": "rezervný fond",
+      "rate": 0.0475
+     }
+    ],
+    "limitVzniku": {
+     "value": 9720,
+     "validFrom": "2027-07-01",
+     "verified": false,
+     "note": "príjmy za rok 2026 (12 × 810 €) – odvodené"
+    },
+    "koeficient": 1.486,
+    "mikro": {
+     "vz": {
+      "value": 421.2,
+      "validFrom": "2027-01-01",
+      "verified": true,
+      "source": "https://www.socpoist.sk/socialne-poistenie/platenie-poistneho/poistne-szco-od-1-jula-2026-mikroodvod",
+      "note": "osobitný vymeriavací základ 2027"
+     },
+     "poistne": {
+      "value": 139.61,
+      "validFrom": "2027-01-01",
+      "verified": true,
+      "source": "https://www.socpoist.sk/socialne-poistenie/platenie-poistneho/poistne-szco-od-1-jula-2026-mikroodvod"
+     }
+    }
+   },
+   "zp": {
+    "rate": 0.16,
+    "minVZ": {
+     "value": 810,
+     "validFrom": "2027-01-01",
+     "verified": false,
+     "note": "50 % z 1 620 €"
+    },
+    "minPreddavok": {
+     "value": 129.6,
+     "validFrom": "2027-01-01",
+     "verified": false
+    },
+    "koeficient": 1.486
+   },
+   "dph": {
+    "registration": {
+     "value": 50000,
+     "validFrom": "2025-01-01",
+     "verified": false
+    },
+    "immediate": {
+     "value": 62500,
+     "validFrom": "2025-01-01",
+     "verified": false
+    }
+   }
+  }
+ }
+}

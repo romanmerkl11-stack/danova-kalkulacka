@@ -86,8 +86,8 @@ export const DEFAULT_SETTINGS: Settings = {
   alwaysAllow: {},
   checkParamsOnStart: false,
   checkUpdatesOnStart: false,
-  paramsUrl: "https://raw.githubusercontent.com/OWNER/danova-kalkulacka/main/params/params.json",
-  updateRepo: "OWNER/danova-kalkulacka",
+  paramsUrl: "https://raw.githubusercontent.com/romanmerkl11-stack/danova-kalkulacka/main/params/params.json",
+  updateRepo: "romanmerkl11-stack/danova-kalkulacka",
 };
 
 export const emptyData = (): AppData => ({
@@ -104,6 +104,13 @@ export const isTauri = () => typeof window !== "undefined" && "__TAURI_INTERNALS
 const LS_KEY = "danova-kalkulacka-data";
 const FILE = "data.json";
 
+/** staré uložené nastavenia mali namiesto repa zástupný text „OWNER“ → nahradiť predvoleným */
+const withRealRepo = (st: Settings): Settings => ({
+  ...st,
+  paramsUrl: st.paramsUrl.includes("OWNER") ? DEFAULT_SETTINGS.paramsUrl : st.paramsUrl,
+  updateRepo: st.updateRepo.includes("OWNER") ? DEFAULT_SETTINGS.updateRepo : st.updateRepo,
+});
+
 const numOrNull = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
 export function normalize(raw: unknown): AppData {
@@ -114,7 +121,7 @@ export function normalize(raw: unknown): AppData {
     version: 1,
     companies: Array.isArray(r.companies) ? r.companies : [],
     calcs: Array.isArray(r.calcs) ? r.calcs : [],
-    settings: { ...DEFAULT_SETTINGS, ...(r.settings ?? {}) },
+    settings: withRealRepo({ ...DEFAULT_SETTINGS, ...(r.settings ?? {}) }),
     acceptedParams: r.acceptedParams && typeof r.acceptedParams === "object" ? r.acceptedParams : {},
     netLog: Array.isArray(r.netLog) ? r.netLog.slice(-500) : [],
     lastInput: r.lastInput,
