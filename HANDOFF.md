@@ -48,6 +48,15 @@ Začni tým, že novej relácii povieš: **„Prečítaj HANDOFF.md a docs/PLAN.
 
 `npm test` → 21/21 testov prechádza. `npx tsc --noEmit` → bez chýb.
 
+**Tauri skeleton (krok 2) ✅** – `src-tauri/`:
+- crate `danova-kalkulacka` (lib `danova_kalkulacka_lib`), pluginy http/fs/dialog/opener v `lib.rs`.
+- Identifikátor **`sk.danovakalkulacka`** (nie `…​.app` – Tauri varuje, lebo `.app` koliduje s príponou balíka na macOS). Dáta: `%APPDATA%\sk.danovakalkulacka\data.json`.
+- `capabilities/default.json`: http len `api.statistics.sk`, `raw.githubusercontent.com`, `api.github.com`; fs `$APPDATA/**` (+ súbory vybrané v dialógu, Tauri ich pridá do scope automaticky).
+- CSP (prod bez `unsafe-inline` pre skripty, sieť len cez IPC) + `devCsp` pre Vite HMR.
+- Bundle `nsis`, `currentUser`, slovenčina. Lokálne na Macu: `npm run tauri build -- --bundles app`.
+- `src/main.tsx` je zatiaľ **len zástupná obrazovka** – nahradiť v kroku 3.
+- Ikony sú predvolené z `tauri init` → neskôr `npx tauri icon cesta/k/logo.png`.
+
 ### Čo engine počíta (`calculate(input)`)
 1. **Príjmy** zadané ročne alebo po mesiacoch. Chýbajúce mesiace sa môžu dopočítať priemerom zadaných.
 2. **Poistné po mesiacoch:**
@@ -109,12 +118,12 @@ Hlavné zdroje: podpora.financnasprava.sk (NČZD 2026, bonus 2026, paušálne v�
 
 ## 5. Ďalšie kroky (TODO, v poradí)
 
-1. **Lokálne prostredie (Mac):**
+1. ✅ **Lokálne prostredie (Mac):** (hotovo – Node 22, Rust 1.100, Xcode CLT)
    ```bash
    npm install && npm test
    ```
    Pre Tauri treba Rust (`rustup`) a Xcode Command Line Tools.
-2. **Tauri skeleton:**
+2. ✅ **Tauri skeleton:** (hotovo, pozri sekciu 3)
    - `npx tauri init` → `src-tauri/`, identifikátor `sk.danovakalkulacka.app`, názov „Daňová kalkulačka“.
    - Pluginy: `tauri-plugin-http`, `tauri-plugin-fs`, `tauri-plugin-dialog`, `tauri-plugin-opener` (registrovať v `lib.rs`).
    - Capabilities:

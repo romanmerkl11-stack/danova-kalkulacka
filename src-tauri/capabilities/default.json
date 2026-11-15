@@ -1,0 +1,29 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Oprávnenia hlavného okna: sieť len na vymenované zdroje, súbory len v AppData (+ súbory vybrané v dialógu).",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "https://api.statistics.sk/*" },
+        { "url": "https://raw.githubusercontent.com/*" },
+        { "url": "https://api.github.com/*" }
+      ]
+    },
+    "fs:default",
+    "fs:allow-appdata-read-recursive",
+    "fs:allow-appdata-write-recursive",
+    "fs:allow-read-file",
+    "fs:allow-write-file",
+    "fs:allow-write-text-file",
+    {
+      "identifier": "fs:scope",
+      "allow": [{ "path": "$APPDATA" }, { "path": "$APPDATA/**" }]
+    },
+    "dialog:default",
+    "opener:default"
+  ]
+}
