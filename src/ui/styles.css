@@ -30,9 +30,11 @@ a { color: var(--accent); }
 /* hlavička */
 .app-header { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 20px 0; }
 .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 10px; }
-.tab { background: none; border: none; border-bottom: 3px solid transparent; color: var(--muted); padding: 8px 14px; font-size: 1rem; cursor: pointer; border-radius: 0; }
-.tab:hover { color: var(--text); }
-.tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+/* záložky: aktívna = podfarbené pozadie + pruh dole (box-shadow) – šírka sa nemení, nič neodskočí */
+.tab { background: none; border: none; color: var(--muted); padding: 8px 14px; font-size: 1rem; font-weight: 500; cursor: pointer; border-radius: 8px 8px 0 0; transition: background 0.15s, color 0.15s; }
+.tab:hover { color: var(--text); background: color-mix(in srgb, var(--info-bg) 50%, transparent); }
+.tab.active { color: var(--text); background: var(--info-bg); box-shadow: inset 0 -3px 0 var(--accent); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
 /* rozloženie */
 .layout { display: grid; grid-template-columns: 420px minmax(0, 1fr); gap: 20px; padding: 20px; align-items: start; }
