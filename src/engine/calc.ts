@@ -580,16 +580,41 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
     });
   }
   if (ypNext) {
-    addLimit({
-      id: "spVznik",
-      label: `Povinné sociálne poistenie od 1. 7. ${Y + 1}`,
-      measure: "príjmy",
-      current: income,
-      limit: ypNext.sp.limitVzniku.value,
-      consequence: `Vznikne povinné sociálne poistenie s odvodom aspoň ${eur(ypNext.sp.minPoistne.value)} mesačne${ypNext.sp.mikro ? ` (pod limitom mikroodvod ${eur(ypNext.sp.mikro.poistne.value)})` : ""}.`,
-      param: ypNext.sp.limitVzniku,
-      useProjection: true,
-    });
+    const mikro = ypNext.sp.mikro;
+    if (mikro?.lowerIncome) {
+      // od 7/2026: do 10,5 × ŽM bez povinnosti, potom mikroodvod, nad limitVzniku riadne odvody
+      addLimit({
+        id: "spVznik",
+        label: `Povinné sociálne poistenie od 1. 7. ${Y + 1}`,
+        measure: "príjmy",
+        current: income,
+        limit: mikro.lowerIncome.value,
+        consequence: `Vznikne povinné sociálne poistenie – pri príjmoch do ${eur(ypNext.sp.limitVzniku.value)} ako mikroodvod ${eur(mikro.poistne.value)} mesačne.`,
+        param: mikro.lowerIncome,
+        useProjection: true,
+      });
+      addLimit({
+        id: "spMikro",
+        label: `Koniec mikroodvodu od 1. 7. ${Y + 1}`,
+        measure: "príjmy",
+        current: income,
+        limit: ypNext.sp.limitVzniku.value,
+        consequence: `Namiesto mikroodvodu ${eur(mikro.poistne.value)} budete platiť riadne sociálne poistenie, aspoň ${eur(ypNext.sp.minPoistne.value)} mesačne.`,
+        param: ypNext.sp.limitVzniku,
+        useProjection: true,
+      });
+    } else {
+      addLimit({
+        id: "spVznik",
+        label: `Povinné sociálne poistenie od 1. 7. ${Y + 1}`,
+        measure: "príjmy",
+        current: income,
+        limit: ypNext.sp.limitVzniku.value,
+        consequence: `Vznikne povinné sociálne poistenie s odvodom aspoň ${eur(ypNext.sp.minPoistne.value)} mesačne${mikro ? ` (pod limitom mikroodvod ${eur(mikro.poistne.value)})` : ""}.`,
+        param: ypNext.sp.limitVzniku,
+        useProjection: true,
+      });
+    }
     const spMaxZd = round2(ypNext.sp.maxVZ.value * 12 * ypNext.sp.koeficient);
     addLimit({
       id: "spMax",

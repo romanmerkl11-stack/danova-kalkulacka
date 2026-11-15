@@ -127,7 +127,7 @@ table.months { width: 100%; border-collapse: collapse; font-variant-numeric: tab
 .months .r, .months th.r { text-align: right; }
 .months td.projected { color: var(--muted); }
 .months tfoot th, .months tfoot td { font-weight: 700; border-top: 2px solid var(--border); border-bottom: none; }
-.months input.num { min-width: 110px; padding: 5px 24px 5px 6px; }
+.months input.num { min-width: 96px; padding: 5px 22px 5px 6px; }
 .cell-with-reset { display: inline-flex; align-items: center; gap: 2px; }
 
 /* postup výpočtu */
@@ -149,7 +149,7 @@ ul.params { margin: 6px 0 0; padding-left: 18px; }
 .dialog-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
 
 @media (prefers-color-scheme: dark) {
-  :root { --bg: #14181f; --card: #1d232d; --text: #e8ecf2; --muted: #a2adbd; --border: #364050; --accent: #6aa5ff; --accent-text: #0b1220; --good: #5fcf86; --amber: #f0b44c; --red: #ff8a80; --info-bg: #1b2d49; --warn-bg: #3a2f14; --danger-bg: #43201e; }
+  :root { color-scheme: dark; --bg: #14181f; --card: #1d232d; --text: #e8ecf2; --muted: #a2adbd; --border: #364050; --accent: #6aa5ff; --accent-text: #0b1220; --good: #5fcf86; --amber: #f0b44c; --red: #ff8a80; --info-bg: #1b2d49; --warn-bg: #3a2f14; --danger-bg: #43201e; }
   input[type="text"], input[type="month"], input[type="number"], select { background: #151a22; }
   .stat { background: #19202a; }
   .step-detail { background: #19202a; }
@@ -227,7 +227,7 @@ ul.params { margin: 6px 0 0; padding-left: 18px; }
 
 /* rýchly výpočet */
 .quick { max-width: 1100px; margin: 0 auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
-.quick-inputs { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.quick-inputs { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
 @media (max-width: 800px) { .quick-inputs { grid-template-columns: minmax(0, 1fr); } }
 .quick-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
 .quick-head h2 { margin: 0; }
@@ -244,8 +244,10 @@ ul.params { margin: 6px 0 0; padding-left: 18px; }
 .tick span { margin-top: 2px; }
 .tick span { margin-top: calc(2px + var(--row, 0) * 14px); }
 @media (max-width: 640px) { .tick span { display: none; } .slider-wrap { padding-bottom: 20px; } }
-.quick .stats { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
-.quick .stat-value { font-size: 1.7rem; }
+.quick .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 760px) { .quick .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.quick .stat { display: flex; flex-direction: column; gap: 2px; }
+.quick .stat-value { font-size: 1.45rem; white-space: nowrap; }
 .quick-warn { display: flex; flex-direction: column; gap: 8px; }
 .quick-actions { display: flex; justify-content: flex-end; }
 .quick .card { padding: 14px 16px; }
@@ -287,3 +289,63 @@ ul.params { margin: 6px 0 0; padding-left: 18px; }
 .card-body { margin-top: 12px; }
 .ui-card.collapsed { padding-top: 12px; padding-bottom: 12px; }
 .card-actions { display: flex; gap: 8px; align-items: center; }
+
+/* --- prepracovanie záložky Výpočet --- */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.card-small { padding: 10px 14px; }
+.card-small h2 { font-size: 1rem; }
+.result-slot { display: contents; }
+.calc-tab { padding-bottom: 8px; }
+.calc-bar {
+  grid-column: 1 / -1; position: sticky; bottom: 0; z-index: 30;
+  display: flex; align-items: center; gap: 12px; flex-wrap: nowrap;
+  padding: 8px 14px; margin: 0 -20px -20px; min-width: 0;
+  background: color-mix(in srgb, var(--card) 92%, transparent); backdrop-filter: blur(6px);
+  border-top: 1px solid var(--border);
+}
+.calc-bar-save { display: flex; align-items: center; gap: 8px; flex-shrink: 0; min-width: 0; }
+.calc-bar-save .save-form, .calc-bar-save .save-actions { display: flex; align-items: center; gap: 8px; margin: 0; }
+.calc-bar-save input[type="text"] { width: 16rem; max-width: 40vw; }
+.calc-bar-note { max-width: 14rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.calc-bar-links { display: flex; gap: 6px; flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; justify-content: flex-end; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.chip { padding: 3px 10px; border-radius: 999px; font-size: 0.85rem; white-space: nowrap; flex-shrink: 0; }
+@media (max-width: 800px) {
+  .calc-bar { flex-direction: column; align-items: stretch; gap: 6px; margin: 0 -20px -20px; }
+  .calc-bar-links { justify-content: flex-start; }
+  .calc-bar-note { display: none; }
+}
+.search-row input { min-width: 0; flex: 1; }
+.small-btn { padding: 4px 10px; font-size: 0.85rem; flex-shrink: 0; }
+.expense-table input[type="text"] { width: 100%; min-width: 6rem; }
+.expense-table .months-input { width: 4rem; }
+.contrib-period { margin: 6px 0; }
+.layout-list { list-style: none; margin: 8px 0; padding: 0; }
+.layout-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+
+/* tmavé posuvníky a polia podľa systému; šípka karty kreslená čiarou (rovnaká vo všetkých fontoch) */
+:root { color-scheme: light dark; }
+.chev { width: 0.5em; height: 0.5em; margin: 0 0.25em 0 0.1em; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(-45deg); flex-shrink: 0; }
+.card-toggle[aria-expanded="true"] .chev { transform: rotate(45deg); }
+.card-toggle:hover .chev { border-color: var(--text); }
+
+/* riadky výdavkov – zmestiť do úzkeho stĺpca */
+.expense-table th[scope="row"] { text-transform: none; }
+.expense-table th, .expense-table td { padding: 4px 4px; }
+.expense-table input[type="text"] { min-width: 0; }
+.expense-table .num-wrap { display: block; min-width: 0; width: 5.6rem; }
+.expense-table .months-input { width: 3.9rem; }
+.expense-rows .table-wrap { overflow-x: visible; }
+.unsaved-badge { color: var(--amber); font-weight: 600; white-space: nowrap; }
+
+/* upozornenie na 2 % / 3 % dane */
+.assign-notice { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: var(--radius); border: 1px solid var(--border); border-left: 4px solid var(--good); background: var(--card); }
+.assign-icon { font-size: 1.5rem; line-height: 1; }
+.assign-body { flex: 1; display: grid; gap: 4px; }
+.assign-body .muted { color: var(--muted); }
+.search-head { justify-content: space-between; align-items: baseline; }
+.icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; }
+.icon-btn:hover, .icon-btn.active { color: var(--accent); border-color: var(--accent); }
+.rental-income-row { align-items: flex-end; gap: 10px; }
+.rental-income-row > .field:first-child { flex: 1; }
+.months-field { width: 5.5rem; }

@@ -27,6 +27,8 @@ export interface SavedCalc {
   id: string;
   ico: string;
   companyName: string;
+  /** názov, pod ktorým sa výpočet ukladá (anonymne, napr. „Mama“) */
+  nickname?: string;
   title: string;
   year: number;
   createdAt: string;
@@ -52,6 +54,8 @@ export interface Settings {
   paramsUrl: string;
   /** GitHub repozitár pre aktualizácie appky (owner/repo) */
   updateRepo: string;
+  /** poradie a viditeľnosť kariet na záložke Výpočet (výsledkový stĺpec) */
+  calcLayout?: { id: string; visible: boolean }[];
 }
 
 export interface NetLogEntry {
@@ -74,6 +78,8 @@ export interface AppData {
   lastInput?: CalcInput;
   /** naposledy použité IČO */
   lastIco?: string;
+  /** naposledy použitý názov */
+  lastNickname?: string;
   /** naučené pravidlá pre triedenie pohybov z výpisu z účtu */
   bankRules?: BankRule[];
   /** stav záložky Rýchly výpočet */
@@ -111,6 +117,13 @@ const withRealRepo = (st: Settings): Settings => ({
   updateRepo: st.updateRepo.includes("OWNER") ? DEFAULT_SETTINGS.updateRepo : st.updateRepo,
 });
 
+const cleanLayout = (st: Settings): Settings => {
+  const l = st.calcLayout;
+  if (l === undefined) return st;
+  const ok = Array.isArray(l) ? l.filter((x) => x && typeof x.id === "string" && typeof x.visible === "boolean") : [];
+  return { ...st, calcLayout: ok.length > 0 ? ok : undefined };
+};
+
 const numOrNull = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
 export function normalize(raw: unknown): AppData {
@@ -121,11 +134,12 @@ export function normalize(raw: unknown): AppData {
     version: 1,
     companies: Array.isArray(r.companies) ? r.companies : [],
     calcs: Array.isArray(r.calcs) ? r.calcs : [],
-    settings: withRealRepo({ ...DEFAULT_SETTINGS, ...(r.settings ?? {}) }),
+    settings: cleanLayout(withRealRepo({ ...DEFAULT_SETTINGS, ...(r.settings ?? {}) })),
     acceptedParams: r.acceptedParams && typeof r.acceptedParams === "object" ? r.acceptedParams : {},
     netLog: Array.isArray(r.netLog) ? r.netLog.slice(-500) : [],
     lastInput: r.lastInput,
     lastIco: typeof r.lastIco === "string" ? r.lastIco : undefined,
+    lastNickname: typeof r.lastNickname === "string" ? r.lastNickname : undefined,
     bankRules: Array.isArray(r.bankRules) ? r.bankRules : [],
     quick:
       r.quick && typeof r.quick === "object" && Number.isFinite(r.quick.year) && Number.isFinite(r.quick.income)

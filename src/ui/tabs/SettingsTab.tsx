@@ -4,6 +4,7 @@ import { checkAppUpdate, type ReleaseInfo } from "../../net/sources";
 import { isTauri, normalize, openFile, saveFileAs, type AppData, type Settings, type SourceId } from "../../store/storage";
 import { APP_VERSION, isNewerVersion } from "../../version";
 import { skDateTime } from "../format";
+import { cardDef, resolveLayout } from "../calcLayout";
 
 interface Props {
   data: AppData;
@@ -17,6 +18,16 @@ export function SettingsTab({ data, setData, onReplaceData }: Props) {
   const s = data.settings;
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setData((d) => ({ ...d, settings: { ...d.settings, [k]: v } }));
   const setAllow = (src: SourceId, v: boolean) => setData((d) => ({ ...d, settings: { ...d.settings, alwaysAllow: { ...d.settings.alwaysAllow, [src]: v } } }));
+
+  const layout = resolveLayout(s.calcLayout);
+  const setLayout = (l: typeof layout) => set("calcLayout", l);
+  const move = (i: number, dir: -1 | 1) => {
+    const j = i + dir;
+    if (j < 0 || j >= layout.length) return;
+    const l = layout.slice();
+    [l[i], l[j]] = [l[j], l[i]];
+    setLayout(l);
+  };
 
   const [backupMsg, setBackupMsg] = useState<string | null>(null);
   const [restore, setRestore] = useState<AppData | null>(null);
@@ -100,6 +111,31 @@ export function SettingsTab({ data, setData, onReplaceData }: Props) {
         <div className="field">
           <label htmlFor="update-repo">Repozitár aplikácie na GitHube (vlastník/repozitár)</label>
           <input id="update-repo" type="text" value={s.updateRepo} onChange={(e) => set("updateRepo", e.target.value)} />
+        </div>
+      </section>
+
+      <section className="card">
+        <h2>Záložka Výpočet – karty</h2>
+        <p className="note small">Zvoľte, ktoré karty sa zobrazia v pravom stĺpci záložky Výpočet, a ich poradie.</p>
+        <ul className="layout-list">
+          {layout.map((l, i) => {
+            const name = cardDef(l.id)?.title ?? l.id;
+            return (
+              <li key={l.id} className="layout-row">
+                <label className="check">
+                  <input type="checkbox" checked={l.visible} onChange={(e) => setLayout(layout.map((x) => (x.id === l.id ? { ...x, visible: e.target.checked } : x)))} />
+                  {name}
+                </label>
+                <span className="row">
+                  <button type="button" className="ghost icon" aria-label={`Posunúť vyššie – ${name}`} disabled={i === 0} onClick={() => move(i, -1)}>↑</button>
+                  <button type="button" className="ghost icon" aria-label={`Posunúť nižšie – ${name}`} disabled={i === layout.length - 1} onClick={() => move(i, 1)}>↓</button>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="row">
+          <button type="button" className="ghost" onClick={() => set("calcLayout", undefined)}>Obnoviť predvolené</button>
         </div>
       </section>
 

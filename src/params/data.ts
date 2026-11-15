@@ -16,6 +16,8 @@ const PODNIKAJTE_ODVODY_2025 = "https://www.podnikajte.sk/socialne-a-zdravotne-o
 const PODNIKAJTE_NCZD_2025 = "https://www.podnikajte.sk/dan-z-prijmov/nezdanitelne-casti-zakladu-dane-2025";
 const PODNIKAJTE_ODVODY_2022 =
   "https://www.podnikajte.sk/socialne-a-zdravotne-odvody/hranica-prijmov-platenie-odvodov-2022";
+const MPSVR_2026 = "https://employment.gov.sk/sk/socialne-poistenie-dochodkovy-system/socialne-poistenie/najvyznamnejsie-zmeny-socialnom-poisteni/zmeny-od-1-jula-2026.html";
+const PODNIKAJTE_2027 = "https://www.podnikajte.sk/socialne-a-zdravotne-odvody/hranica-prijmov-pre-ne-platenie-odvodov-do-socialnej-poistovne-v-roku-2027";
 const PODNIKAJTE_DPH = "https://www.podnikajte.sk/dan-z-pridanej-hodnoty/registracia-pre-dph-od-2025";
 const NETFINANCIE_ZP_2026 =
   "https://www.netfinancie.sk/zdravotne-poistenie/szco_vymeriavacie_zaklady_a_preddavky_poistneho_2026.pdf";
@@ -69,7 +71,7 @@ export const PARAMS: ParamSet = {
       priemernaMzda: p(1304, "2024-01-01", true, undefined, "priemerná mesačná mzda v SR za rok 2022"),
       minVZ: p(652, "2024-01-01", true, PODNIKAJTE_ODVODY_2022, "50 % priemernej mzdy 2022"),
       minPoistne: p(216.13, "2024-01-01", true),
-      maxVZ: p(14344, "2024-01-01", false, undefined, "11 × priemerná mzda 2022 – overiť"),
+      maxVZ: p(9128, "2024-01-01", true, "https://www.podnikajte.sk/socialne-a-zdravotne-odvody/socialne-odvody-szco-od-1-7-2024", "7 × priemerná mzda 2022 (11 × platí až od 2025)"),
       funds: SP_FUNDS,
       limitVzniku: p(7824, "2024-07-01", true, undefined, "príjmy za rok 2023 (12 × 652 €)"),
       koeficient: 1.486,
@@ -109,7 +111,7 @@ export const PARAMS: ParamSet = {
         { maxAge: 15, monthly: p(100, "2025-01-01", true) },
         { maxAge: 18, monthly: p(50, "2025-01-01", true) },
       ],
-      bonusReductionThreshold: p(2145, "2025-01-01", false, undefined, "krátenie 1/10 z rozdielu – overiť"),
+      bonusReductionThreshold: p(2145, "2025-01-01", true, "https://podpora.financnasprava.sk/272586-Da%C5%88ov%C3%BD-bonus-na-die%C5%A5a-v-roku-2025", "krátenie 1/10 z rozdielu"),
       minimalnaMzda: p(816, "2025-01-01", true),
       advanceQuarterly: p(5000, "2025-01-01", true),
       advanceMonthly: p(16600, "2025-01-01", true),
@@ -163,7 +165,7 @@ export const PARAMS: ParamSet = {
         { maxAge: 18, monthly: p(50, "2026-01-01", true, FS_BONUS_2026) },
       ],
       bonusReductionThreshold: p(2286, "2026-01-01", true, FS_BONUS_2026, "bonus sa kráti o 1/10 × (mesačný ZD − 2 286 €)"),
-      minimalnaMzda: p(915, "2026-01-01", false, undefined, "overiť"),
+      minimalnaMzda: p(915, "2026-01-01", true, "https://www.podnikajte.sk/socialne-a-zdravotne-odvody/hruba-a-cista-minimalna-mzda-v-roku-2027"),
       advanceQuarterly: p(5000, "2026-01-01", true),
       advanceMonthly: p(16600, "2026-01-01", true),
     },
@@ -173,12 +175,12 @@ export const PARAMS: ParamSet = {
       minPoistne: p(303.11, "2026-01-01", true, SP_2026),
       maxVZ: p(16764, "2026-01-01", true, SP_2026, "11 × priemerná mzda 2024"),
       funds: SP_FUNDS,
-      limitVzniku: p(9144, "2026-07-01", true, SP_MIKRO, "príjmy za rok 2025 (12 × 762 €)"),
+      limitVzniku: p(9144, "2026-07-01", true, MPSVR_2026, "hranica mikroodvodu: 50 % z 12 × 1 524 € (príjmy za rok 2025); nad ňou riadne odvody"),
       koeficient: 1.486,
       mikro: {
         vz: p(396.24, "2026-07-01", true, SP_MIKRO, "osobitný vymeriavací základ", "2026-12-31"),
         poistne: p(131.34, "2026-07-01", true, SP_MIKRO, "mikroodvod", "2026-12-31"),
-        lowerIncome: p(2876.9, "2026-07-01", false, undefined, "pod touto sumou príjmov povinnosť nevzniká – overiť"),
+        lowerIncome: p(2876.9, "2026-07-01", true, MPSVR_2026, "10,5 × životné minimum – do tejto sumy príjmov povinnosť nevzniká"),
       },
     },
     zp: {
@@ -198,27 +200,28 @@ export const PARAMS: ParamSet = {
     status: "predbežné",
     tax: null,
     sp: {
-      priemernaMzda: p(1620, "2027-01-01", false, SP_MIKRO, "priemerná mzda 2025 – odvodené zo súm Sociálnej poisťovne"),
-      minVZ: p(972, "2027-01-01", false, undefined, "60 % z 1 620 €"),
-      minPoistne: p(322.21, "2027-01-01", false),
-      maxVZ: p(17820, "2027-01-01", false, undefined, "11 × 1 620 €"),
+      priemernaMzda: p(1620, "2027-01-01", true, PODNIKAJTE_2027, "priemerná mesačná mzda v SR za rok 2025"),
+      minVZ: p(972, "2027-01-01", true, PODNIKAJTE_2027, "60 % z 1 620 €"),
+      minPoistne: p(322.21, "2027-01-01", true, PODNIKAJTE_2027),
+      maxVZ: p(17820, "2027-01-01", true, PODNIKAJTE_2027, "11 × 1 620 €"),
       funds: SP_FUNDS,
-      limitVzniku: p(9720, "2027-07-01", false, undefined, "príjmy za rok 2026 (12 × 810 €) – odvodené"),
+      limitVzniku: p(9720, "2027-07-01", false, PODNIKAJTE_2027, "hranica mikroodvodu: 50 % z 12 × 1 620 € (príjmy za rok 2026) – odvodené z pravidla 2026"),
       koeficient: 1.486,
       mikro: {
         vz: p(421.2, "2027-01-01", true, SP_MIKRO, "osobitný vymeriavací základ 2027"),
         poistne: p(139.61, "2027-01-01", true, SP_MIKRO),
+        lowerIncome: p(2983.37, "2027-07-01", true, PODNIKAJTE_2027, "10,5 × životné minimum – do tejto sumy príjmov (2026) povinnosť nevzniká"),
       },
     },
     zp: {
       rate: 0.16,
-      minVZ: p(810, "2027-01-01", false, undefined, "50 % z 1 620 €"),
-      minPreddavok: p(129.6, "2027-01-01", false),
+      minVZ: p(810, "2027-01-01", false, undefined, "50 % z 1 620 € – podľa pravidla 2026, oficiálne nepotvrdené"),
+      minPreddavok: p(129.6, "2027-01-01", false, "https://pravnenoviny.sk/?p=20581", "16 % z 810 € – sadzba 16 % pre 2027 oficiálne nepotvrdená"),
       koeficient: 1.486,
     },
     dph: {
-      registration: p(50000, "2025-01-01", false),
-      immediate: p(62500, "2025-01-01", false),
+      registration: p(50000, "2025-01-01", true, PODNIKAJTE_DPH),
+      immediate: p(62500, "2025-01-01", true, PODNIKAJTE_DPH),
     },
   },
 };

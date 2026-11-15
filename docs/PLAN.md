@@ -1,4 +1,4 @@
-# Daňová a odvodová kalkulačka – SZČO (paušál) + neskôr s.r.o.
+# Daňová a odvodová kalkulačka – SZČO (paušál) + neskôr zamestnanec
 
 ## Kontext
 Používateľ dnes počíta daň a odvody v Exceli `DPFOB_DP_2024_predpoklad.xlsx`
@@ -6,11 +6,11 @@ Používateľ dnes počíta daň a odvody v Exceli `DPFOB_DP_2024_predpoklad.xls
 (mesačné alebo ročné príjmy), zvyšok sa dopočíta, všetko sa dá prepísať, uvidí
 vysvetlenie výpočtu, rezervu do limitov, môže exportovať a ukladať históriu podľa
 IČO/obchodného mena, údaje o firme sa doťahujú z verejných registrov a ročné sadzby
-sa sledujú automaticky (s dátumom účinnosti). Neskôr verzia pre s.r.o.
+sa sledujú automaticky (s dátumom účinnosti). Neskôr verzia pre zamestnanca (s.r.o. vypustené).
 
 Rozhodnuté: **základ beží úplne offline**; na internet ide len keď treba, a **vopred sa spýta**
 („Idem na rpo.statistics.sk zistiť údaje k IČO 12345678 – povoliť?“). V nastaveniach prepínač
-**„Nepýtať sa, rovno ísť na net“** (globálne aj po zdrojoch). História lokálne + export/import, s.r.o. ako fáza 2.
+**„Nepýtať sa, rovno ísť na net“** (globálne aj po zdrojoch). História lokálne + export/import, zamestnanec ako fáza 2 (s.r.o. vypustené).
 
 ## Postrehy z tvojho Excelu (opravím v kalkulačke)
 1. **Strop 20 000 € sa reálne neuplatňuje** – `podklady!C18 = C15 + C17` berie nezastropených 60 %
@@ -107,11 +107,14 @@ s dátumom účinnosti. Plus samostatná stránka „Ako sa to počíta“.
 - **Upozornenie na stav DPH** (podľa obratu za 12 po sebe idúcich mesiacov, nie kalendárny rok).
 - Záloha celej databázy jedným klikom (súbor), aby sa história nestratila pri výmene PC.
 
-## Fáza 2 – s.r.o. (nadstavba na tom istom engine)
-- DPPO: **10 % / 21 % / 24 %** podľa výnosov (pásma overiť pre rok), daňová licencia ak platí, zisk → dividendy (zrážková daň 7 % + ZP z dividend podľa pravidiel roka).
-- Mzda/odmena konateľa (odvody zamestnávateľ + zamestnanec, daň), optimalizácia mzda vs. dividenda.
-- **Porovnanie SZČO vs. s.r.o.** pri rovnakom zisku – koľko ostane v rukách.
-- Údaje firmy z RPO/ORSR (konatelia, ZI), limity: DPH, povinný audit, mikro účtovná jednotka.
+## Fáza 2 – zamestnanec (súbeh príjmov, DP typ A / B)
+Schválené používateľom 15. 11. 2026; s.r.o. **vypustené**. Cieľ: zamestnanci, ktorí musia/chcú podať DP (aj s prenájmom a inými príjmami).
+1. **Profil „Zamestnanec“** – živnosť sa dá vypnúť; vstup z **potvrdenia o zdaniteľnej mzde** (príjem, poistné, preddavky, bonus), viac zamestnávateľov po riadkoch.
+2. **Súbeh** zamestnanie (§5) + živnosť (§6 ods. 1, 2) + prenájom (§6 ods. 3) + ostatné príjmy (§8) v jednom výpočte, správne poradie NČZD.
+3. **Ostatné príjmy (§8)** – príležitostná činnosť / prenájom hnuteľných vecí (oslobodenie 500 €), predaj nehnuteľnosti/hnuteľnej veci (oslobodenia), autorské honoráre.
+4. **Typ DP a povinnosť podať** – A len pri výlučne §5; s §6 ods. 3 alebo §8 → **typ B**; termín, preplatok/nedoplatok voči zrazeným preddavkom.
+5. **Kontrola ročného zúčtovania** zamestnávateľa.
+6. 2 % / 3 % asignácia, (zamestnanecká prémia – overiť, či platí), daňový bonus na úroky z hypotéky pre mladých.
 
 ## Kroky implementácie
 1. Init repo (Tauri + React + TS + Vite, Vitest, Playwright), štruktúra `src/engine/`, `src/net/`, `params/`.
@@ -123,7 +126,7 @@ s dátumom účinnosti. Plus samostatná stránka „Ako sa to počíta“.
 7. Kontrola nových sadzieb (parsery + diff + potvrdenie) a GitHub Action pre kurátorovaný súbor sadzieb.
 8. Windows inštalátor `.exe` (build cez GitHub Actions na Windows runneri → GitHub Releases), updater s dovolením, návod pre
    netechnického používateľa (inštalácia, SmartScreen, záloha). macOS `.dmg` voliteľne neskôr.
-9. Fáza 2 s.r.o.
+9. Fáza 2 – zamestnanec
 
 ## Overenie
 - **Unit testy engine** proti tvojmu Excelu: vstupy z `podklady` (2024: príjmy 31 500, SP 216,13, ZP 97,80, NČZD 5 646,48)

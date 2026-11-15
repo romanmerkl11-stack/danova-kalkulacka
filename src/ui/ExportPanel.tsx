@@ -4,6 +4,7 @@ import type { CalcInput, CalcResult } from "../engine/types";
 import { buildXlsx } from "../export/xlsx";
 import { calcToJson, parseCalcJson, type CalcData } from "../export/json";
 import { openFile, saveFileAs } from "../store/storage";
+import { Card } from "./Card";
 import { skDate } from "./format";
 
 interface Props {
@@ -94,8 +95,7 @@ export function ExportPanel({ result, input, ico, companyName, title, onLoad }: 
   };
 
   return (
-    <section className="card" aria-label="Export a import">
-      <h2>Export a import</h2>
+    <Card id="card-export" title="Export a import" defaultOpen={false}>
       <div className="row export-row">
         <span className="export-label">Export:</span>
         <button type="button" className="ghost" disabled={busy} onClick={exportXlsx}>Excel (XLSX)</button>
@@ -120,6 +120,6 @@ export function ExportPanel({ result, input, ico, companyName, title, onLoad }: 
           </div>
         </div>
       )}
-    </section>
+    </Card>
   );
 }

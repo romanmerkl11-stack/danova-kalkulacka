@@ -1,6 +1,7 @@
 import { eur, pct } from "../engine/money";
 import type { CalcResult } from "../engine/types";
 import type { ParamSet } from "../params/types";
+import { Card } from "./Card";
 import { periods, spBreakdown } from "./contrib";
 
 interface Props {
@@ -46,18 +47,17 @@ export function ContributionsPanel({ result, params }: Props) {
   const zp = periods(result.months, "zp").filter((p) => p.amount > 0);
 
   return (
-    <section className="card contrib">
-      <h2>Z čoho sa skladajú odvody</h2>
+    <Card id="card-contrib" className="contrib" title="Z čoho sa skladajú odvody" defaultOpen={false}>
 
       <h3>Sociálne poistenie {result.year}</h3>
       {sp.length === 0 && <p className="note">V tomto roku neplatíte sociálne poistenie.</p>}
       {sp.map((p) => (
-        <details key={p.from} open={sp.length === 1}>
-          <summary>
+        <div key={p.from} className="contrib-period">
+          <p>
             {p.from === p.to ? `za ${p.from}` : `za ${p.from} – ${p.to}`}: <strong>{eur(p.amount)}</strong> mesačne {p.auto ? "(automaticky)" : "(zadané)"}
-          </summary>
+          </p>
           <SpTable amount={p.amount} sp={y.sp} />
-        </details>
+        </div>
       ))}
 
       <h3>Zdravotné poistenie {result.year}</h3>
@@ -87,6 +87,6 @@ export function ContributionsPanel({ result, params }: Props) {
       <p className="note small">
         Ako SZČO neplatíte poistenie v nezamestnanosti (dá sa platiť dobrovoľne), úrazové ani garančné poistenie – tie platí len zamestnávateľ za zamestnancov.
       </p>
-    </section>
+    </Card>
   );
 }

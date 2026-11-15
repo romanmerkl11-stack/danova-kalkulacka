@@ -2,6 +2,7 @@ import { useState } from "react";
 import { eur } from "../engine/money";
 import type { CalcInput, CalcResult, Step } from "../engine/types";
 import type { Update } from "./InputSections";
+import { Card } from "./Card";
 import { NumberInput } from "./NumberInput";
 
 const GROUPS: { id: Step["group"]; title: string }[] = [
@@ -15,7 +16,7 @@ const GROUPS: { id: Step["group"]; title: string }[] = [
 
 const paramFmt = new Intl.NumberFormat("sk-SK", { maximumFractionDigits: 6 });
 
-function StepRow({ step, input, update }: { step: Step; input: CalcInput; update: Update }) {
+function StepRow({ step, input, update, readOnly }: { step: Step; input: CalcInput; update: Update; readOnly?: boolean }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<number | null>(step.value);
@@ -46,7 +47,7 @@ function StepRow({ step, input, update }: { step: Step; input: CalcInput; update
           <button type="button" className="ghost icon" aria-expanded={open} aria-label={`Podrobnosti – ${step.label}`} title="Podrobnosti" onClick={() => setOpen(!open)}>
             ⓘ
           </button>
-          {step.editable && !editing && (
+          {step.editable && !readOnly && !editing && (
             <button
               type="button"
               className="ghost icon"
@@ -96,10 +97,19 @@ function StepRow({ step, input, update }: { step: Step; input: CalcInput; update
   );
 }
 
-export function StepsList({ result, input, update }: { result: CalcResult; input: CalcInput; update: Update }) {
+interface Props {
+  result: CalcResult;
+  input: CalcInput;
+  update: Update;
+  /** bez ručného prepisovania krokov (napr. Rýchly výpočet) */
+  readOnly?: boolean;
+  cardId?: string;
+  defaultOpen?: boolean;
+}
+
+export function StepsList({ result, input, update, readOnly, cardId = "card-steps", defaultOpen = true }: Props) {
   return (
-    <section className="card">
-      <h2>Postup výpočtu</h2>
+    <Card id={cardId} title="Postup výpočtu" defaultOpen={defaultOpen}>
       {GROUPS.map((g) => {
         const steps = result.steps.filter((s) => s.group === g.id);
         if (steps.length === 0) return null;
@@ -108,12 +118,12 @@ export function StepsList({ result, input, update }: { result: CalcResult; input
             <h3>{g.title}</h3>
             <ul className="steps">
               {steps.map((s) => (
-                <StepRow key={s.id} step={s} input={input} update={update} />
+                <StepRow key={s.id} step={s} input={input} update={update} readOnly={readOnly} />
               ))}
             </ul>
           </div>
         );
       })}
-    </section>
+    </Card>
   );
 }

@@ -6,7 +6,9 @@ import type { ParamSet } from "../../params/types";
 import type { AppData } from "../../store/storage";
 import { NumberInput } from "../NumberInput";
 import { formatSkNumber } from "../format";
-import { buildQuickInput, contributionLimits, contributionThresholds, incomeLimits, SLIDER_STEP, sliderMax, toDetailedInput, withoutOwnContributions, type QuickState } from "../quick";
+import { StepsList } from "../StepsList";
+import { AssignNotice } from "../AssignNotice";
+import { buildQuickInput, contributionLimits, contributionThresholds, incomeLimits, taxStartThreshold, SLIDER_STEP, sliderMax, toDetailedInput, withoutOwnContributions, type QuickState } from "../quick";
 
 interface Props {
   quick: NonNullable<AppData["quick"]>;
@@ -45,7 +47,7 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed 
 
   // hranice „odvody nad minimum“ nezávisia od príjmu → prepočet len pri zmene roka, výdavkov či odvodov
   const thresholds = useMemo(
-    () => contributionThresholds({ ...dq, income: 0 }, params),
+    () => [...taxStartThreshold({ ...dq, income: 0 }, params), ...contributionThresholds({ ...dq, income: 0 }, params)],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [dq.year, dq.expenses, dq.spH1, dq.spH2, dq.zp, params],
   );
@@ -187,14 +189,26 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed 
           <Stat label="Daň" value={eur(s.tax)} sub={Math.abs(s.taxToPay - s.tax) > 0.005 ? `${refund ? "Preplatok" : "Na úhradu"}: ${eur(Math.abs(s.taxToPay))}` : undefined} tone="main" />
           <Stat label={`Odvody za ${result.year}`} value={eur(s.sp + s.zp)} sub={`SP ${eur(s.sp)} · ZP ${eur(s.zp)}`} />
           <Stat
-            label={`Nové odvody ${n.year}`}
-            value={`${eur(n.spFromJuly + n.zpMonthly)} / mes.`}
+            label={`Nové odvody ${n.year} mesačne`}
+            value={eur(n.spFromJuly + n.zpMonthly)}
             sub={`SP od 7/${n.year}: ${eur(n.spFromJuly)}${REGIME[n.spRegime] ? ` (${REGIME[n.spRegime]})` : ""} · ZP ${n.year}: ${eur(n.zpMonthly)}`}
           />
-          <Stat label="Čistý príjem ročne" value={eur(s.net)} sub={`${eur(s.netMonthly)} mesačne`} tone="good" />
-          <Stat label="Efektívne zaťaženie" value={pct(s.effectiveRate)} sub="daň + odvody z príjmov" />
+          {s.income > 0 ? (
+            <>
+              <Stat
+                label="Čistý príjem ročne"
+                value={eur(s.net)}
+                sub={`${eur(s.netMonthly)} mesačne · zaťaženie ${s.effectiveRate > 1 ? "nad 100 %" : pct(s.effectiveRate)} (daň + odvody)`}
+                tone="good"
+              />
+            </>
+          ) : (
+            <Stat label="Čistý príjem ročne" value="—" sub="Zadajte príjmy za rok – odvody sa platia aj bez príjmov." tone="good" />
+          )}
         </div>
       </section>
+
+      <AssignNotice tax={result.summary.tax} year={result.year} />
 
       {exceeded.length > 0 && (
         <div className="quick-warn">
@@ -205,6 +219,8 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed 
           ))}
         </div>
       )}
+
+      <StepsList result={result} input={buildQuickInput(dq, dq.expenses !== null)} update={() => undefined} readOnly cardId="card-quick-steps" defaultOpen={false} />
 
       <div className="quick-actions">
         <button type="button" onClick={() => onDetailed(toDetailedInput(quick, lastInput))}>Podrobný výpočet →</button>

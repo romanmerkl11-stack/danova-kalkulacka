@@ -108,6 +108,28 @@ export function contributionThresholds(q: QuickState, params: ParamSet): { id: s
   return out;
 }
 
+/** Príjem, od ktorého vznikne daň z príjmov (daň > 0; do 17 € sa daň nevyrubí). Nezávisí od samotného príjmu. */
+export function taxStartThreshold(q: QuickState, params: ParamSet): { id: string; label: string; limit: number; consequence: string }[] {
+  const tax = (income: number) => calculate(buildQuickInput({ ...q, income }), params).summary.tax;
+  let lo = 0;
+  let hi = 1_000_000;
+  if (tax(hi) <= 0) return [];
+  if (tax(lo) > 0) return [];
+  while (hi - lo > 0.01) {
+    const mid = (lo + hi) / 2;
+    if (tax(mid) > 0) hi = mid;
+    else lo = mid;
+  }
+  return [
+    {
+      id: "danStart",
+      label: "Začnete platiť daň",
+      limit: Math.round(hi * 100) / 100,
+      consequence: "Nad touto sumou príjmov vám už vznikne daň z príjmov (základ dane prevýši nezdaniteľnú časť a daň presiahne 17 €, do ktorých sa nevyrubuje).",
+    },
+  ];
+}
+
 /** Hranice odvodov ako limity pre aktuálny príjem (na značky posuvníka a varovania). */
 export function contributionLimits(thresholds: ReturnType<typeof contributionThresholds>, income: number): LimitInfo[] {
   return thresholds.map((t) => ({ ...t, current: income, measure: "príjmy", exceeded: income > t.limit }));

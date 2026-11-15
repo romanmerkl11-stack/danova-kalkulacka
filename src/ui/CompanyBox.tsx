@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { NetDenied } from "../net/net";
-import { lookupCompany, registryLinks, searchCompanies, validIco, withDetail } from "../net/sources";
+import { Card } from "./Card";
+import { lookupCompany, searchCompanies, validIco, withDetail } from "../net/sources";
 import type { Company } from "../store/storage";
 
 interface Props {
+  nickname: string;
+  onNickname: (v: string) => void;
   ico: string;
   onIco: (ico: string) => void;
   company: Company | null;
@@ -12,11 +15,13 @@ interface Props {
 
 const MIN_NAME = 3;
 
-export function CompanyBox({ ico, onIco, company, onFound }: Props) {
+export function CompanyBox({ nickname, onNickname, ico, onIco, company, onFound }: Props) {
   const [query, setQuery] = useState(ico);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [hits, setHits] = useState<Company[] | null>(null);
+  // hľadanie v registri je skryté, kým si ho používateľ neotvorí
+  const [searchOpen, setSearchOpen] = useState(false);
 
   // keď sa IČO zmení zvonku (napr. výber z histórie), prenesie sa do poľa
   useEffect(() => {
@@ -46,8 +51,10 @@ export function CompanyBox({ ico, onIco, company, onFound }: Props) {
     try {
       if (isIco) {
         const c = await lookupCompany(q);
-        if (c) onFound(c);
-        else setMsg("Pre toto IČO sa v registri nič nenašlo.");
+        if (c) {
+          onFound(c);
+          setSearchOpen(false);
+        } else setMsg("Pre toto IČO sa v registri nič nenašlo.");
       } else {
         const list = await searchCompanies(q);
         if (list.length === 0) setMsg(`Nenašiel sa žiadny aktívny podnikateľ ani firma s názvom „${q}“.`);
@@ -66,6 +73,7 @@ export function CompanyBox({ ico, onIco, company, onFound }: Props) {
     setQuery(c.ico);
     onIco(c.ico);
     onFound(c);
+    setSearchOpen(false);
     setBusy(true);
     try {
       onFound(await withDetail(c));
@@ -75,47 +83,79 @@ export function CompanyBox({ ico, onIco, company, onFound }: Props) {
   };
 
   return (
-    <section className="card">
-      <h2>Podnikateľ</h2>
+    <Card
+      id="card-company"
+      title="Podnikateľ"
+      className="company-card"
+      actions={
+        <button
+          type="button"
+          className={`icon-btn${searchOpen ? " active" : ""}`}
+          aria-label={searchOpen ? "Skryť hľadanie v registri" : "Hľadať v registri (IČO alebo obchodné meno)"}
+          title={searchOpen ? "Skryť hľadanie v registri" : "Hľadať v registri (IČO alebo obchodné meno)"}
+          aria-expanded={searchOpen}
+          onClick={() => {
+            setSearchOpen(!searchOpen);
+            setHits(null);
+            setMsg(null);
+          }}
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+            <circle cx="10.5" cy="10.5" r="6.5" />
+            <path d="M15.5 15.5 21 21" />
+          </svg>
+        </button>
+      }
+    >
       <div className="field">
-        <label htmlFor="ico">IČO alebo obchodné meno</label>
-        <div className="row">
-          <input
-            id="ico"
-            type="text"
-            value={query}
-            placeholder="napr. 12345678 alebo Novák"
-            onChange={(e) => onQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") void search();
-            }}
-          />
-          <button type="button" onClick={search} disabled={!canSearch || busy}>
-            {busy ? "Hľadám…" : "Hľadať v registri"}
-          </button>
-        </div>
-        {!isIco && q.length > 0 && q.length < MIN_NAME && <p className="note small">Zadajte aspoň {MIN_NAME} znaky názvu.</p>}
-        {isIco && q.length > 0 && !validIco(q) && <p className="note small">IČO má 8 číslic.</p>}
+        <label htmlFor="nickname">Názov</label>
+        <input id="nickname" type="text" value={nickname} placeholder="napr. Ja, Mama" autoComplete="off" onChange={(e) => onNickname(e.target.value)} />
+        <p className="note small">Pod týmto názvom sa výpočty ukladajú v Histórii (napr. „Ja“, „Mama“). IČO ani obchodné meno nie sú povinné.</p>
       </div>
-      {msg && <p className="note warn-text" role="alert">{msg}</p>}
-      {hits && (
-        <div className="hits">
-          <p className="note small">Nájdené: {hits.length}{hits.length >= 30 ? " (zobrazených prvých 30 – spresnite názov)" : ""}. Vyberte:</p>
-          <ul className="hit-list">
-            {hits.map((c) => (
-              <li key={c.ico}>
-                <button type="button" className="hit" onClick={() => void pick(c)}>
-                  <strong>{c.name}</strong>
-                  <span className="small">IČO {c.ico}{c.address ? ` · ${c.address}` : ""}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
+      {searchOpen && (
+        <>
+          <div className="field">
+            <label htmlFor="ico">Hľadať v registri – IČO alebo obchodné meno</label>
+            <div className="row search-row">
+              <input
+                id="ico"
+                type="text"
+                value={query}
+                autoFocus
+                placeholder="napr. 12345678 alebo Novák"
+                onChange={(e) => onQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void search();
+                }}
+              />
+              <button type="button" className="small-btn" onClick={search} disabled={!canSearch || busy}>
+                {busy ? "Hľadám…" : "Hľadať"}
+              </button>
+            </div>
+            {!isIco && q.length > 0 && q.length < MIN_NAME && <p className="note small">Zadajte aspoň {MIN_NAME} znaky názvu.</p>}
+            {isIco && q.length > 0 && !validIco(q) && <p className="note small">IČO má 8 číslic.</p>}
+          </div>
+          {msg && <p className="note warn-text" role="alert">{msg}</p>}
+          {hits && (
+            <div className="hits">
+              <p className="note small">Nájdené: {hits.length}{hits.length >= 30 ? " (zobrazených prvých 30 – spresnite názov)" : ""}. Vyberte:</p>
+              <ul className="hit-list">
+                {hits.map((c) => (
+                  <li key={c.ico}>
+                    <button type="button" className="hit" onClick={() => void pick(c)}>
+                      <strong>{c.name}</strong>
+                      <span className="small">IČO {c.ico}{c.address ? ` · ${c.address}` : ""}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
       )}
       {company && (
         <dl className="company">
-          <dt>Názov</dt>
+          <dt>Obchodné meno</dt>
           <dd>{company.name}</dd>
           <dt>IČO</dt>
           <dd>{company.ico}</dd>
@@ -127,22 +167,12 @@ export function CompanyBox({ ico, onIco, company, onFound }: Props) {
             <>
               <dt>Predmety podnikania</dt>
               <dd>
-                <details>
-                  <summary>{company.activities.length} živností</summary>
-                  <ul className="small">{company.activities.map((a) => <li key={a}>{a}</li>)}</ul>
-                </details>
+                <ul className="small">{company.activities.map((a) => <li key={a}>{a}</li>)}</ul>
               </dd>
             </>
           )}
         </dl>
       )}
-      {validIco(ico) && (
-        <p className="links small">
-          {registryLinks(ico).map((l) => (
-            <a key={l.url} href={l.url} target="_blank" rel="noreferrer">{l.label}</a>
-          ))}
-        </p>
-      )}
-    </section>
+    </Card>
   );
 }

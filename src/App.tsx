@@ -138,6 +138,9 @@ export default function App() {
   const currentCalc = data?.calcs.find((c) => c.id === currentCalcId) ?? null;
 
   const company = data?.companies.find((c) => c.ico === ico) ?? null;
+  const nickname = data?.lastNickname ?? "";
+  const setNickname = (v: string) => setData((d) => (d ? { ...d, lastNickname: v } : d));
+  const displayName = nickname.trim() || company?.name || "Bez mena";
 
   const saveCalc = (title: string, asNew: boolean) => {
     if (!input || !calc?.result) return;
@@ -145,7 +148,8 @@ export default function App() {
     const now = new Date().toISOString();
     const base = {
       ico,
-      companyName: company?.name ?? (ico || "Bez IČO"),
+      companyName: displayName,
+      nickname: nickname.trim() || undefined,
       year: input.year,
       input: structuredClone(input),
       summary: { income: r.income, tax: r.tax, taxToPay: r.taxToPay, sp: r.sp, zp: r.zp, net: r.net },
@@ -162,7 +166,7 @@ export default function App() {
   };
 
   const openCalc = (c: SavedCalc) => {
-    setData((d) => (d ? { ...d, lastInput: structuredClone(c.input), lastIco: c.ico } : d));
+    setData((d) => (d ? { ...d, lastInput: structuredClone(c.input), lastIco: c.ico, lastNickname: c.nickname ?? "" } : d));
     setIcoState(c.ico);
     setCurrentCalcId(c.id);
     setTab("Výpočet");
@@ -234,6 +238,9 @@ export default function App() {
           input={input}
           update={update}
           replaceInput={replaceInput}
+          nickname={nickname}
+          onNickname={setNickname}
+          calcLayout={data.settings.calcLayout}
           ico={ico}
           onIco={setIco}
           company={company}
@@ -241,7 +248,7 @@ export default function App() {
           calc={calc}
           currentCalc={currentCalc}
           onSave={saveCalc}
-          companyName={company?.name ?? (ico || "Bez IČO")}
+          companyName={displayName}
           onLoadInput={loadInput}
           params={params}
           bankRules={data.bankRules ?? []}
@@ -255,7 +262,7 @@ export default function App() {
       {tab === "Nastavenia" && <SettingsTab data={data} setData={(fn) => setData((d) => (d ? fn(d) : d))} onReplaceData={replaceAllData} />}
       {tab === "Ako sa to počíta" && <HowTab year={input.year} params={params} />}
 
-      <PrintReport result={calc.result} input={input} title={currentCalc?.title ?? `Výpočet ${input.year}`} companyName={company?.name ?? (ico || "Bez IČO")} ico={ico} />
+      <PrintReport result={calc.result} input={input} title={currentCalc?.title ?? `Výpočet ${input.year}`} companyName={displayName} ico={ico} />
 
       {pending && <PermissionDialog req={pending.req} onDecide={decide} />}
     </div>

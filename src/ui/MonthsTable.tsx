@@ -2,6 +2,7 @@ import { MONTHS } from "../engine/calc";
 import { eur } from "../engine/money";
 import type { CalcInput, CalcResult } from "../engine/types";
 import type { Update } from "./InputSections";
+import { Card } from "./Card";
 import { formatSkNumber } from "./format";
 import { NumberInput } from "./NumberInput";
 
@@ -99,20 +100,10 @@ const ResetBtn = ({ label, onClick }: { label: string; onClick: () => void }) =>
 );
 
 export function MonthsTable(props: Props) {
-  if (props.input.income.mode === "monthly") {
-    return (
-      <section className="card">
-        <h2>Príjmy a odvody po mesiacoch</h2>
-        <Table {...props} />
-      </section>
-    );
-  }
+  const monthly = props.input.income.mode === "monthly";
   return (
-    <section className="card">
-      <details>
-        <summary className="card-summary">Odvody po mesiacoch</summary>
-        <Table {...props} />
-      </details>
-    </section>
+    <Card id="card-months" title={monthly ? "Príjmy a odvody po mesiacoch" : "Odvody po mesiacoch"}>
+      <Table {...props} />
+    </Card>
   );
 }

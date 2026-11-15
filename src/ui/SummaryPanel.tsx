@@ -1,5 +1,7 @@
+import { AssignNotice } from "./AssignNotice";
 import { eur, pct } from "../engine/money";
 import type { CalcResult } from "../engine/types";
+import { Card as UiCard } from "./Card";
 
 const Card = ({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: string }) => (
   <div className={`stat ${tone ?? ""}`}>
@@ -13,8 +15,8 @@ export function SummaryPanel({ result }: { result: CalcResult }) {
   const s = result.summary;
   const refund = s.taxToPay < 0;
   return (
-    <section className="card" aria-label="Zhrnutie">
-      <h2>Zhrnutie za rok {result.year}</h2>
+    <UiCard id="card-summary" title={`Súhrn za rok ${result.year}`} defaultOpen={false}>
+      <AssignNotice tax={s.tax} year={result.year} />
       <div className="stats">
         <Card label="Príjmy" value={eur(s.income)} />
         <Card label="Daň" value={eur(s.tax)} />
@@ -22,7 +24,7 @@ export function SummaryPanel({ result }: { result: CalcResult }) {
         <Card label="Sociálne poistenie" value={eur(s.sp)} />
         <Card label="Zdravotné poistenie" value={eur(s.zp)} />
         <Card label="Čistý príjem" value={eur(s.net)} sub={`${eur(s.netMonthly)} mesačne`} tone="good" />
-        <Card label="Efektívne zaťaženie" value={pct(s.effectiveRate)} sub="daň + odvody z príjmov" />
+        <Card label="Efektívne zaťaženie" value={s.effectiveRate > 1 ? "nad 100 %" : pct(s.effectiveRate)} sub={s.effectiveRate > 1 ? "odvody sú vyššie ako príjmy" : "daň + odvody z príjmov"} />
       </div>
       {result.warnings.length > 0 && (
         <div className="warnings">
@@ -33,6 +35,6 @@ export function SummaryPanel({ result }: { result: CalcResult }) {
           ))}
         </div>
       )}
-    </section>
+    </UiCard>
   );
 }

@@ -1,12 +1,12 @@
 import { MONTHS } from "../engine/calc";
 import { eur } from "../engine/money";
 import type { CalcResult } from "../engine/types";
+import { Card } from "./Card";
 
 export function LimitsPanel({ result }: { result: CalcResult }) {
   if (result.limits.length === 0) return null;
   return (
-    <section className="card">
-      <h2>Rezerva do limitov</h2>
+    <Card id="card-limits" title="Rezerva do limitov" defaultOpen={false}>
       {result.limits.map((l) => {
         const ratio = l.limit > 0 ? l.current / l.limit : 0;
         const tone = l.exceeded || ratio > 1 ? "red" : ratio >= 0.8 ? "amber" : "green";
@@ -39,6 +39,6 @@ export function LimitsPanel({ result }: { result: CalcResult }) {
           </div>
         );
       })}
-    </section>
+    </Card>
   );
 }

@@ -63,3 +63,15 @@ describe("hranice odvodov nad minimum", () => {
     expect(at(zp.limit + 50).zpMonthly).toBeGreaterThan(PARAMS[2027].zp.minPreddavok.value);
   });
 });
+
+describe("hranica, od ktorej začnem platiť daň", () => {
+  it("tesne pod hranicou je daň 0, tesne nad ňou kladná", async () => {
+    const { PARAMS } = await import("../params/data");
+    const { taxStartThreshold } = await import("./quick");
+    const q = { year: 2026, income: 0, expenses: null };
+    const [t] = taxStartThreshold(q, PARAMS);
+    expect(t.id).toBe("danStart");
+    expect(calculate(buildQuickInput({ ...q, income: t.limit - 1 })).summary.tax).toBe(0);
+    expect(calculate(buildQuickInput({ ...q, income: t.limit + 1 })).summary.tax).toBeGreaterThan(0);
+  });
+});

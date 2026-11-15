@@ -98,12 +98,12 @@ export function HistoryTab({ data, setData, params, onOpen }: Props) {
   const groups = useMemo(() => {
     const q = norm(filter.trim());
     const list = data.calcs
-      .filter((c) => !q || norm(`${c.title} ${c.companyName} ${c.ico}`).includes(q))
+      .filter((c) => !q || norm(`${c.title} ${c.companyName} ${c.nickname ?? ""} ${c.ico}`).includes(q))
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     const map = new Map<string, { name: string; ico: string; items: SavedCalc[] }>();
     for (const c of list) {
-      const key = `${c.ico}|${c.companyName}`;
-      const g = map.get(key) ?? { name: c.companyName, ico: c.ico, items: [] };
+      const key = c.nickname ? `n:${c.nickname}` : `${c.ico}|${c.companyName}`;
+      const g = map.get(key) ?? { name: c.nickname || c.companyName, ico: c.nickname ? "" : c.ico, items: [] };
       g.items.push(c);
       map.set(key, g);
     }

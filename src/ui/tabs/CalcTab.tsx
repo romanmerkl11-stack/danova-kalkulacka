@@ -6,6 +6,7 @@ import { ContributionsPanel } from "../ContributionsPanel";
 import { useState } from "react";
 import type { CalcInput, CalcResult } from "../../engine/types";
 import type { Company, SavedCalc } from "../../store/storage";
+import { Card } from "../Card";
 import { ExportPanel } from "../ExportPanel";
 import { InputsPanel } from "../InputsPanel";
 import type { Update } from "../InputSections";
@@ -15,11 +16,16 @@ import { NextYearPanel } from "../NextYearPanel";
 import { StepsList } from "../StepsList";
 import { SummaryPanel } from "../SummaryPanel";
 import { skDate } from "../format";
+import { cardDef, resolveLayout, type LayoutItem } from "../calcLayout";
+import { unsavedState } from "../unsaved";
 
 interface Props {
   input: CalcInput;
   update: Update;
   replaceInput: (i: CalcInput) => void;
+  nickname: string;
+  onNickname: (v: string) => void;
+  calcLayout?: LayoutItem[];
   ico: string;
   onIco: (ico: string) => void;
   company: Company | null;
@@ -34,7 +40,7 @@ interface Props {
   onBankRules: (r: BankRule[]) => void;
 }
 
-function SavePanel({ input, currentCalc, onSave }: Pick<Props, "input" | "currentCalc" | "onSave">) {
+function SaveControls({ input, currentCalc, onSave }: Pick<Props, "input" | "currentCalc" | "onSave">) {
   const [asking, setAsking] = useState<null | { asNew: boolean; title: string }>(null);
   const [saved, setSaved] = useState(false);
 
@@ -43,6 +49,7 @@ function SavePanel({ input, currentCalc, onSave }: Pick<Props, "input" | "curren
     window.setTimeout(() => setSaved(false), 2500);
   };
   const defaultTitle = `Výpočet ${input.year} – ${skDate(new Date().toISOString())}`;
+  const state = unsavedState(input, currentCalc?.input ?? null);
 
   const submit = () => {
     if (!asking) return;
@@ -52,13 +59,12 @@ function SavePanel({ input, currentCalc, onSave }: Pick<Props, "input" | "curren
   };
 
   return (
-    <section className="card" aria-label="Uloženie výpočtu">
+    <div className="calc-bar-save" aria-label="Uloženie výpočtu">
       {currentCalc ? (
-        <p className="note">
-          Upravujete uložený výpočet: <strong>{currentCalc.title}</strong>
-        </p>
-      ) : (
-        <p className="note">Tento výpočet zatiaľ nie je uložený.</p>
+        <span className="calc-bar-note small" title={currentCalc.title}>Upravujete: <strong>{currentCalc.title}</strong></span>
+      ) : null}
+      {!saved && (state === "dirty" || state === "unsaved") && (
+        <span className="unsaved-badge small" role="status">● {state === "dirty" ? "Neuložené zmeny" : "Výpočet nie je uložený"}</span>
       )}
       {asking ? (
         <form
@@ -68,17 +74,13 @@ function SavePanel({ input, currentCalc, onSave }: Pick<Props, "input" | "curren
             submit();
           }}
         >
-          <div className="field">
-            <label htmlFor="save-title">Názov výpočtu</label>
-            <input id="save-title" type="text" autoFocus value={asking.title} onChange={(e) => setAsking({ ...asking, title: e.target.value })} />
-          </div>
-          <div className="row">
-            <button type="submit">Uložiť</button>
-            <button type="button" className="ghost" onClick={() => setAsking(null)}>Zrušiť</button>
-          </div>
+          <label htmlFor="save-title" className="sr-only">Názov výpočtu</label>
+          <input id="save-title" type="text" autoFocus placeholder="Názov výpočtu" value={asking.title} onChange={(e) => setAsking({ ...asking, title: e.target.value })} />
+          <button type="submit">Uložiť</button>
+          <button type="button" className="ghost" onClick={() => setAsking(null)}>Zrušiť</button>
         </form>
       ) : (
-        <div className="row save-actions">
+        <div className="save-actions">
           {currentCalc ? (
             <>
               <button type="button" onClick={() => { onSave(currentCalc.title, false); flash(); }}>Uložiť zmeny</button>
@@ -90,45 +92,66 @@ function SavePanel({ input, currentCalc, onSave }: Pick<Props, "input" | "curren
           {saved && <span className="good-text" role="status">Uložené</span>}
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
-export function CalcTab({ input, update, replaceInput, ico, onIco, company, onFound, calc, currentCalc, onSave, companyName, onLoadInput, params, bankRules, onBankRules }: Props) {
+function openCard(id: string) {
+  window.dispatchEvent(new CustomEvent("dk-open-card", { detail: id }));
+  window.requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }));
+}
+
+export function CalcTab({ input, update, replaceInput, nickname, onNickname, calcLayout, ico, onIco, company, onFound, calc, currentCalc, onSave, companyName, onLoadInput, params, bankRules, onBankRules }: Props) {
   const [bankOpen, setBankOpen] = useState(false);
+  const layout = resolveLayout(calcLayout).filter((l) => l.visible);
+  const result = calc.result;
+
+  const render = (id: string) => {
+    if (!result) return null;
+    switch (id) {
+      case "card-steps": return <StepsList result={result} input={input} update={update} />;
+      case "card-months": return <MonthsTable input={input} result={result} update={update} />;
+      case "card-summary": return <SummaryPanel result={result} />;
+      case "card-limits": return <LimitsPanel result={result} />;
+      case "card-next": return <NextYearPanel result={result} />;
+      case "card-contrib": return <ContributionsPanel result={result} params={params} />;
+      case "card-bank":
+        return (
+          <Card id="card-bank" title="Výpis z účtu" defaultOpen={false}>
+            <p className="note small">Nahrajte výpis (PDF, Excel, CSV alebo XML) – appka nájde príjmy a platby do Sociálnej a zdravotnej poisťovne a rozpíše ich do mesiacov. Výpis sa spracuje len v tomto počítači.</p>
+            <button type="button" onClick={() => setBankOpen(true)}>Nahrať výpis z účtu</button>
+          </Card>
+        );
+      case "card-export":
+        return <ExportPanel result={result} input={input} ico={ico} companyName={companyName} title={currentCalc?.title ?? `Výpočet ${input.year}`} onLoad={onLoadInput} />;
+      default: return null;
+    }
+  };
+
   return (
-    <main className="layout">
-      <InputsPanel input={input} update={update} replaceInput={replaceInput} ico={ico} onIco={onIco} company={company} onFound={onFound} />
+    <main className="layout calc-tab">
+      <InputsPanel input={input} update={update} replaceInput={replaceInput} nickname={nickname} onNickname={onNickname} ico={ico} onIco={onIco} company={company} onFound={onFound} />
       <div className="results">
-        {calc.error || !calc.result ? (
+        {calc.error || !result ? (
           <div className="box danger" role="alert">
             Výpočet sa nepodarilo dokončiť: {calc.error}
           </div>
         ) : (
-          <>
-            <SavePanel input={input} currentCalc={currentCalc} onSave={onSave} />
-            <ExportPanel
-              result={calc.result}
-              input={input}
-              ico={ico}
-              companyName={companyName}
-              title={currentCalc?.title ?? `Výpočet ${input.year}`}
-              onLoad={onLoadInput}
-            />
-            <section className="card bank-entry">
-              <h2>Výpis z účtu</h2>
-              <p className="note small">Nahrajte výpis (PDF, Excel, CSV alebo XML) – appka nájde príjmy a platby do Sociálnej a zdravotnej poisťovne a rozpíše ich do mesiacov. Výpis sa spracuje len v tomto počítači.</p>
-              <button type="button" onClick={() => setBankOpen(true)}>Nahrať výpis z účtu</button>
-            </section>
-            <SummaryPanel result={calc.result} />
-            <LimitsPanel result={calc.result} />
-            <MonthsTable input={input} result={calc.result} update={update} />
-            <StepsList result={calc.result} input={input} update={update} />
-            <NextYearPanel result={calc.result} />
-            <ContributionsPanel result={calc.result} params={params} />
-          </>
+          layout.map((l) => <div key={l.id} className="result-slot">{render(l.id)}</div>)
         )}
       </div>
+      {result && (
+        <div className="calc-bar" role="region" aria-label="Uloženie a rýchle odkazy">
+          <SaveControls input={input} currentCalc={currentCalc} onSave={onSave} />
+          <nav className="calc-bar-links" aria-label="Rýchle odkazy na karty">
+            {layout.map((l) => (
+              <button key={l.id} type="button" className="ghost chip" onClick={() => openCard(l.id)}>
+                {cardDef(l.id)?.short ?? l.id}
+              </button>
+            ))}
+          </nav>
+        </div>
+      )}
       {bankOpen && (
         <BankImport
           input={input}

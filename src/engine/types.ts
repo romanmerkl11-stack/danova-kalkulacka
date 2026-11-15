@@ -8,6 +8,14 @@ export interface Child {
   birth: string;
 }
 
+/** riadok mesačného výdavku (voda, plyn, nájom…) – ročne = monthly × months */
+export interface ExpenseItem {
+  name: string;
+  monthly: number;
+  /** počet mesiacov v roku (1–12) */
+  months: number;
+}
+
 export interface CalcInput {
   year: number;
   income: {
@@ -31,9 +39,14 @@ export interface CalcInput {
     spPaid: Month12;
     zpPaid: Month12;
   };
-  expenses: { mode: "pausal" | "actual"; actual: number };
+  expenses: { mode: "pausal" | "actual"; actual: number; /** rozpis po riadkoch; actual = súčet */ items?: ExpenseItem[] };
   employment: { gross: number; insurance: number; taxWithheld: number; bonusPaid: number };
-  rental: { income: number; expenses: number };
+  rental: {
+    income: number;
+    /** príjem zadaný mesačne: nájomné × počet mesiacov = income */
+    incomeMonthly?: number;
+    incomeMonths?: number;
+    expenses: number; /** rozpis po riadkoch; expenses = súčet */ items?: ExpenseItem[] };
   children: Child[];
   spouse: { claim: boolean; income: number; months: number };
   dds: number;

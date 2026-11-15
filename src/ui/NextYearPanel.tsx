@@ -1,5 +1,6 @@
 import { eur } from "../engine/money";
 import type { CalcResult } from "../engine/types";
+import { Card } from "./Card";
 
 const REGIME = { standard: "podľa vymeriavacieho základu / minimum", mikro: "mikroodvod", none: "nie ste povinne poistený", unknown: "neznámy" } as const;
 
@@ -8,8 +9,7 @@ export function NextYearPanel({ result }: { result: CalcResult }) {
   const adv = n.taxAdvance;
   const advText = adv.period === "none" ? "Neplatíte" : adv.period === "quarterly" ? `Štvrťročne ${eur(adv.amount)}` : `Mesačne ${eur(adv.amount)}`;
   return (
-    <section className="card">
-      <h2>Budúci rok {n.year}</h2>
+    <Card id="card-next" title={`Budúci rok ${n.year}`} defaultOpen={false}>
       {n.paramsStatus !== "platné" && <div className="box warn">Sadzby na budúci rok sú {n.paramsStatus}.</div>}
       <dl className="kv">
         <dt>Sociálne poistenie od júla</dt>
@@ -30,6 +30,6 @@ export function NextYearPanel({ result }: { result: CalcResult }) {
         <dt>Preddavky na daň</dt>
         <dd>{advText}</dd>
       </dl>
-    </section>
+    </Card>
   );
 }

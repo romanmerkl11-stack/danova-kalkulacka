@@ -2,8 +2,11 @@ import { defaultInput } from "../engine/calc";
 import type { CalcInput } from "../engine/types";
 import { PARAMS } from "../params/data";
 import type { Company } from "../store/storage";
+import { Card } from "./Card";
 import { CompanyBox } from "./CompanyBox";
 import { ChildrenSection, EmploymentSection, OtherSections, RentalSection, SpouseSection, type Update } from "./InputSections";
+import { ExpenseRows } from "./ExpenseRows";
+import { expenseTotal } from "./expenseItems";
 import { NumberInput } from "./NumberInput";
 import { eur } from "../engine/money";
 
@@ -13,6 +16,8 @@ interface Props {
   input: CalcInput;
   update: Update;
   replaceInput: (i: CalcInput) => void;
+  nickname: string;
+  onNickname: (v: string) => void;
   ico: string;
   onIco: (ico: string) => void;
   company: Company | null;
@@ -21,17 +26,16 @@ interface Props {
 
 const YEARS = Object.keys(PARAMS).map(Number).sort((a, b) => a - b);
 
-export function InputsPanel({ input, update, replaceInput, ico, onIco, company, onFound }: Props) {
+export function InputsPanel({ nickname, onNickname, input, update, replaceInput, ico, onIco, company, onFound }: Props) {
   const reset = () => {
     if (window.confirm("Naozaj chcete vynulovať všetky vstupy?")) replaceInput(defaultInput(input.year));
   };
 
   return (
     <div className="inputs">
-      <CompanyBox ico={ico} onIco={onIco} company={company} onFound={onFound} />
+      <CompanyBox nickname={nickname} onNickname={onNickname} ico={ico} onIco={onIco} company={company} onFound={onFound} />
 
-      <section className="card">
-        <h2>Základné údaje</h2>
+      <Card id="card-basic" title="Základné údaje">
         <div className="field">
           <label htmlFor="year">Zdaňovacie obdobie (rok)</label>
           <select id="year" value={input.year} onChange={(e) => update((d) => void (d.year = Number(e.target.value)))}>
@@ -67,7 +71,25 @@ export function InputsPanel({ input, update, replaceInput, ico, onIco, company, 
             <label className="check"><input type="radio" name="emode" checked={input.expenses.mode === "actual"} onChange={() => update((d) => void (d.expenses.mode = "actual"))} /> Skutočné</label>
           </div>
           {input.expenses.mode === "actual" && (
-            <NumberInput label="Skutočné výdavky za rok" value={input.expenses.actual} onChange={(v) => update((d) => void (d.expenses.actual = v ?? 0))} />
+            <>
+              {input.expenses.items && input.expenses.items.length > 0 ? (
+                <p className="note">Skutočné výdavky za rok: <strong>{eur(input.expenses.actual)}</strong> (súčet riadkov)</p>
+              ) : (
+                <NumberInput label="Skutočné výdavky za rok" value={input.expenses.actual} onChange={(v) => update((d) => void (d.expenses.actual = v ?? 0))} />
+              )}
+              <p className="note small">Alebo rozpíšte po mesiacoch (voda, plyn, telefón…):</p>
+              <ExpenseRows
+                label="výdavky"
+                items={input.expenses.items ?? []}
+                onChange={(items) =>
+                  update((d) => {
+                    if (items.length === 0) delete d.expenses.items;
+                    else d.expenses.items = items;
+                    d.expenses.actual = expenseTotal(items);
+                  })
+                }
+              />
+            </>
           )}
         </fieldset>
 
@@ -116,16 +138,13 @@ export function InputsPanel({ input, update, replaceInput, ico, onIco, company, 
             onChange={(v) => update((d) => void (d.insurance.zpMonthlyAmount = v))}
           />
         </fieldset>
-      </section>
+      </Card>
 
-      <section className="card sections">
-        <h2>Ďalšie údaje</h2>
-        <EmploymentSection input={input} update={update} />
-        <RentalSection input={input} update={update} />
-        <ChildrenSection input={input} update={update} />
-        <SpouseSection input={input} update={update} />
-        <OtherSections input={input} update={update} />
-      </section>
+      <EmploymentSection input={input} update={update} />
+      <RentalSection input={input} update={update} />
+      <ChildrenSection input={input} update={update} />
+      <SpouseSection input={input} update={update} />
+      <OtherSections input={input} update={update} />
 
       <button type="button" className="danger-btn" onClick={reset}>Vynulovať vstupy</button>
     </div>

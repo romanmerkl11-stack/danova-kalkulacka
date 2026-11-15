@@ -1,4 +1,4 @@
-# HANDOFF – Daňová a odvodová kalkulačka (SZČO → neskôr s.r.o.)
+# HANDOFF – Daňová a odvodová kalkulačka (SZČO → neskôr zamestnanec)
 
 Odovzdanie z cloudovej relácie na pokračovanie lokálne na Macu (priečinok `~/Developer/DANE`).
 Začni tým, že novej relácii povieš: **„Prečítaj HANDOFF.md a docs/PLAN.md a pokračuj krokom 1 v sekcii Ďalšie kroky.“**
@@ -7,7 +7,7 @@ Začni tým, že novej relácii povieš: **„Prečítaj HANDOFF.md a docs/PLAN.
 
 ## 1. Čo chceme postaviť (zhrnutie požiadaviek)
 
-- Kalkulačka dane z príjmov a odvodov (SP, ZP) pre **živnostníka s paušálnymi výdavkami**. Ako nadstavba neskôr **s.r.o.**
+- Kalkulačka dane z príjmov a odvodov (SP, ZP) pre **živnostníka s paušálnymi výdavkami**. Ako nadstavba neskôr **zamestnanec** (s.r.o. vypustené).
 - Zadáva sa čo najmenej údajov: **ročné príjmy alebo príjmy po mesiacoch**. Zvyšok sa dopočíta, ale **každá hodnota sa dá ručne prepísať**.
 - Automatický **paušál 60 % so stropom 20 000 €** a varovanie pri prekročení.
 - Na konci **rezerva do limitov**, ktoré niečo menia: sadzba dane, odvody na ďalší rok, DPH, krátenie NČZD a pod.
@@ -141,10 +141,6 @@ Hodnoty s `verified: false` appka označí ⚠ a **treba ich overiť na oficiál
 
 Hlavné zdroje: podpora.financnasprava.sk (NČZD 2026, bonus 2026, paušálne výdavky), socpoist.sk (VZ 2026, mikroodvod od 1. 7. 2026), podnikajte.sk (progresia 2026, odvody 2025, DPH od 2025). URL sú priamo v `src/params/data.ts`.
 
-**Pre s.r.o. (fáza 2) zistené:**
-- DPPO 10 % do 100 000 €, 21 % do 5 mil. €, 24 % nad 5 mil. €.
-- Daňová licencia sa od 2026 mení (sumy treba overiť).
-- Dividendy 7 %.
 
 ## 5. Ďalšie kroky (TODO, v poradí)
 
@@ -185,9 +181,7 @@ Hlavné zdroje: podpora.financnasprava.sk (NČZD 2026, bonus 2026, paušálne v�
    - workflow `.github/workflows/release.yml` (`tauri-apps/tauri-action`, runner `windows-latest`, pri tagu `v*` nahrá `.exe` do Releases),
    - návod pre mamu v README (SmartScreen → „Ďalšie informácie → Spustiť aj tak“, kde sú dáta, ako zálohovať).
 7. Overenie podľa `docs/PLAN.md`, sekcia „Overenie“ (offline test, test povolení, Playwright E2E, inštalácia na čistý Windows).
-8. **Fáza 2 – s.r.o.:**
-   - DPPO, daňová licencia, mzda konateľa, dividendy (7 % + ZP),
-   - porovnanie SZČO a s.r.o.
+8. **Fáza 2 – zamestnanec** (s.r.o. vypustené) – pozri docs/PLAN.md.
 
 ## 6. Užitočné príkazy
 
@@ -205,15 +199,25 @@ npm run tauri dev   # desktop appka (po kroku 2)
 - Git: projekt má lokálny git s 1 commitom plus zmeny v tomto balíku. Vzdialené repo zatiaľ nie je nastavené.
 
 ## 8. ROZPRACOVANÉ – požiadavky používateľa (15. 11. 2026), poradie pre ďalšiu session
-Hotové: spoločná zbaľovacia karta `src/ui/Card.tsx` (+ CSS `.ui-card`) – zatiaľ nikde nepoužitá.
-1. **Uložiť výpočet** nebude samostatná karta → plávajúca lišta na konci stránky (Uložiť + rýchle odkazy na sekcie/karty, `#id` z Card).
-2. **Ukladanie primárne anonymne pod prezývkou**; IČO voliteľné. V karte Podnikateľ len malé tlačidlo „Hľadať“ na konci, **bez odkazov** na ZRSR/ORSR/FS/RPO.
-3. **Plán: s.r.o. úplne vyhodiť, namiesto toho „zamestnanec“** (upresniť s používateľom: výpočet čistej mzdy / kombinácia so živnosťou).
-4. **Výdavky po riadkoch** (napr. pri nájme: voda, plyn, telefón, internet/TV, nájom) – meno + mesačná suma (× mesiace) → súčet; použiť v Prenájme aj v skutočných výdavkoch.
-5. **Výpočet:** navrchu Postup výpočtu, pod ním Odvody po mesiacoch, potom ostatné karty – **predvolene zbalené**.
-6. **Nastavenia:** výber, ktoré karty sa na záložke Výpočet zobrazia a v akom poradí.
-7. **Rýchly výpočet:** dole zbalený Postup výpočtu; pridať limit „od akého príjmu začnem platiť daň“ (značka na posuvníku + bublina).
-8. **Zjednotiť šípky:** zbaľuje sa celá karta (Card), vnútri všetko rozbalené (napr. „Z čoho sa skladajú odvody“ bez vnorených šípok).
+Spoločná zbaľovacia karta `src/ui/Card.tsx` sa používa vo Výpočte aj Rýchlom výpočte (udalosť `dk-open-card`).
+1. ✅ **Uložiť výpočet** nebude samostatná karta → plávajúca lišta na konci stránky (Uložiť + rýchle odkazy na sekcie/karty, `#id` z Card).
+2. ✅ **Ukladanie primárne anonymne pod prezývkou**; IČO voliteľné. V karte Podnikateľ len malé tlačidlo „Hľadať“ na konci, **bez odkazov** na ZRSR/ORSR/FS/RPO.
+3. ✅ s.r.o. vyhodené; **fáza 2 = zamestnanec** (súbeh, prenájom, §8, DP typ A/B) – rozsah v docs/PLAN.md.
+4. ✅ **Výdavky po riadkoch** (napr. pri nájme: voda, plyn, telefón, internet/TV, nájom) – meno + mesačná suma (× mesiace) → súčet; použiť v Prenájme aj v skutočných výdavkoch.
+5. ✅ **Výpočet:** navrchu Postup výpočtu, pod ním Odvody po mesiacoch, potom ostatné karty – **predvolene zbalené**.
+6. ✅ **Nastavenia:** výber, ktoré karty sa na záložke Výpočet zobrazia a v akom poradí.
+7. ✅ **Rýchly výpočet:** dole zbalený Postup výpočtu; pridať limit „od akého príjmu začnem platiť daň“ (značka na posuvníku + bublina).
+8. ✅ **Zjednotiť šípky:** zbaľuje sa celá karta (Card), vnútri všetko rozbalené (napr. „Z čoho sa skladajú odvody“ bez vnorených šípok).
 9. Farby podľa systému (tmavý režim) – používateľ OK.
-10. Potom prejsť celú appku a navrhnúť vylepšenia.
+10. ✅ Návrhy prejdené. Schválené: overiť ⚠ sadzby, „—“ pri príjme 0 (✅), značka neuložených zmien (✅), test desktopovej verzie. Zamietnuté: Safari/trvalé úložisko, mobil (nie je priorita), predvolený rok (aktuálny je správny – odhad DP za bežný rok).
 Web: https://romanmerkl11-stack.github.io/danova-kalkulacka/ (push do main = nasadenie).
+
+## 9. Hotové 15. 11. 2026 (večer)
+- **Sadzby overené** (subagent, web): opravené max. VZ SP 2024 = **9 128 €** (7×, nie 11×); overené bonus 2025, min. mzda 2026, mikroodvod 2026, 2027 (priemerná mzda 1 620, min. VZ 972, min. SP 322,21, max. VZ 17 820, mikroodvod 139,61), DPH 50 000 / 62 500. Stále **neoverené**: hranica mikroodvodu 2027 (9 720 – odvodené), ZP 2027 (min. VZ 810, 129,60 €, sadzba 16 %).
+- **Oprava logiky od 7/2026:** príjem do 10,5 × ŽM (2 876,90 € / 2027: 2 983,37 €) = bez povinnosti SP; do 50 % z 12 × priem. mzdy (9 144 € / 9 720 €) = mikroodvod; nad = riadne odvody. Limity `spVznik` (dolná hranica) + nový `spMikro` (koniec mikroodvodu).
+- **Okienko 2 % / 3 % dane** (`src/ui/AssignNotice.tsx`, `assign.ts`) v Rýchlom výpočte a v Súhrne – ukáže sa pri dani ≥ 150 € (min. 3 €). Pravidlá pre rodičov 2026 nejednoznačné – v texte „overte“.
+- „Prezývka“ → **„Názov“**; hľadanie v registri schované pod **ikonou lupy** v hlavičke karty Podnikateľ.
+- Rýchly výpočet: čistý príjem „—“ pri príjme 0; efektívne zaťaženie „nad 100 %“ keď odvody prevyšujú príjmy.
+- **Značka neuložených zmien** v lište (`src/ui/unsaved.ts`).
+- **Desktop (Tauri) otestovaný:** build `.app`, štart, výpočet, zápis `data.json` v Application Support OK. Natívne dialógy (export/import súborov, PDF výpis) treba vyskúšať ručne.
+- Fáza 2 = **zamestnanec** (súbeh, prenájom, §8, DP typ A/B) – rozsah v docs/PLAN.md, ďalší krok.
