@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseRpo, validIco } from "./sources";
+import { parseRpo, parseRpoSearch, validIco } from "./sources";
 
 describe("parseRpo", () => {
   it("vyberie aktuálne meno, adresu a SK NACE", () => {
@@ -30,5 +30,28 @@ describe("parseRpo", () => {
   it("validIco", () => {
     expect(validIco("12345678")).toBe(true);
     expect(validIco("1234567")).toBe(false);
+  });
+});
+
+describe("parseRpoSearch", () => {
+  const entry = (ico: string, name: string, termination?: string) => ({
+    identifiers: [{ value: ico, validFrom: "2010-01-01" }],
+    fullNames: [{ value: name, validFrom: "2010-01-01" }],
+    termination,
+  });
+  it("vynechá zaniknuté a duplicity, zhody na začiatku názvu dá prvé (bez ohľadu na diakritiku)", () => {
+    const json = {
+      results: [
+        entry("11111111", "Stavby Novák s.r.o."),
+        entry("22222222", "Novák – Stolárstvo"),
+        entry("33333333", "Novák Zaniknutý", "2020-01-01"),
+        entry("22222222", "Novák – Stolárstvo"),
+      ],
+    };
+    const r = parseRpoSearch("novak", json);
+    expect(r.map((c) => c.ico)).toEqual(["22222222", "11111111"]);
+  });
+  it("prázdna odpoveď → []", () => {
+    expect(parseRpoSearch("x", { results: [] })).toEqual([]);
   });
 });

@@ -13,11 +13,32 @@ const latest = <T extends { validFrom?: string; validTo?: string }>(xs: T[] | un
   return [...pool].sort((a, b) => String(b.validFrom ?? "").localeCompare(String(a.validFrom ?? "")))[0];
 };
 
+const rpoResults = (json: any): any[] => (Array.isArray(json?.results) ? json.results : Array.isArray(json) ? json : json ? [json] : []);
+
 /** Prevedie odpoveď RPO API na údaje firmy. Exportované kvôli testom. */
 export function parseRpo(ico: string, json: any): Company | null {
-  const results: any[] = Array.isArray(json?.results) ? json.results : Array.isArray(json) ? json : json ? [json] : [];
+  const results = rpoResults(json);
   const e = results.find((r) => Array.isArray(r?.identifiers) && r.identifiers.some((i: any) => String(i?.value) === ico)) ?? results[0];
   if (!e) return null;
+  return parseRpoEntry(ico, e);
+}
+
+/** Výsledky hľadania podľa obchodného mena: aktuálne názvy, ktoré obsahujú hľadaný text, idú prvé. Exportované kvôli testom. */
+export function parseRpoSearch(query: string, json: any): Company[] {
+  const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const q = norm(query.trim());
+  const out: Company[] = [];
+  for (const e of rpoResults(json)) {
+    if (e?.termination) continue;
+    const ico = String(latest<any>(e?.identifiers)?.value ?? "");
+    const c = ico ? parseRpoEntry(ico, e) : null;
+    if (c && !out.some((x) => x.ico === c.ico)) out.push(c);
+  }
+  const score = (c: Company) => (norm(c.name).startsWith(q) ? 0 : norm(c.name).includes(q) ? 1 : 2);
+  return out.sort((a, b) => score(a) - score(b) || a.name.localeCompare(b.name, "sk"));
+}
+
+function parseRpoEntry(ico: string, e: any): Company | null {
   const name = latest<any>(e.fullNames)?.value;
   if (!name) return null;
   const a = latest<any>(e.addresses);
@@ -57,6 +78,20 @@ export async function lookupCompany(ico: string): Promise<Company | null> {
   });
   if (!res.ok) throw new Error(`Register odpovedal chybou ${res.status}.`);
   return parseRpo(ico, await res.json());
+}
+
+/** Hľadanie v RPO podľa obchodného mena (len nezaniknuté subjekty). */
+export async function searchCompanies(name: string): Promise<Company[]> {
+  const q = name.trim();
+  const url = `https://api.statistics.sk/rpo/v1/search?fullName=${encodeURIComponent(q)}&onlyActive=true`;
+  const res = await netFetch({
+    source: "rpo",
+    purpose: `Nájsť podnikateľov a firmy, ktorých obchodné meno obsahuje „${q}“`,
+    url,
+    sends: `hľadaný text „${q}“`,
+  });
+  if (!res.ok) throw new Error(`Register odpovedal chybou ${res.status}.`);
+  return parseRpoSearch(q, await res.json()).slice(0, 30);
 }
 
 /** Odkazy na registre, ktoré nemajú API – otvoria sa v prehliadači. */

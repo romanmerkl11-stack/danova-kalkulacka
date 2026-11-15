@@ -1,0 +1,104 @@
+import { defaultInput } from "../engine/calc";
+import type { CalcInput } from "../engine/types";
+import { PARAMS } from "../params/data";
+import type { Company } from "../store/storage";
+import { CompanyBox } from "./CompanyBox";
+import { ChildrenSection, EmploymentSection, OtherSections, RentalSection, SpouseSection, type Update } from "./InputSections";
+import { NumberInput } from "./NumberInput";
+
+interface Props {
+  input: CalcInput;
+  update: Update;
+  replaceInput: (i: CalcInput) => void;
+  ico: string;
+  onIco: (ico: string) => void;
+  company: Company | null;
+  onFound: (c: Company) => void;
+}
+
+const YEARS = Object.keys(PARAMS).map(Number).sort((a, b) => a - b);
+
+export function InputsPanel({ input, update, replaceInput, ico, onIco, company, onFound }: Props) {
+  const reset = () => {
+    if (window.confirm("Naozaj chcete vynulovať všetky vstupy?")) replaceInput(defaultInput(input.year));
+  };
+
+  return (
+    <div className="inputs">
+      <CompanyBox ico={ico} onIco={onIco} company={company} onFound={onFound} />
+
+      <section className="card">
+        <h2>Základné údaje</h2>
+        <div className="field">
+          <label htmlFor="year">Zdaňovacie obdobie (rok)</label>
+          <select id="year" value={input.year} onChange={(e) => update((d) => void (d.year = Number(e.target.value)))}>
+            {YEARS.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
+
+        <fieldset>
+          <legend>Príjmy z podnikania</legend>
+          <div className="radio-row">
+            <label className="check"><input type="radio" name="imode" checked={input.income.mode === "annual"} onChange={() => update((d) => void (d.income.mode = "annual"))} /> Ročne</label>
+            <label className="check"><input type="radio" name="imode" checked={input.income.mode === "monthly"} onChange={() => update((d) => void (d.income.mode = "monthly"))} /> Mesačne</label>
+          </div>
+          {input.income.mode === "annual" ? (
+            <NumberInput label="Príjmy za rok" value={input.income.annual} onChange={(v) => update((d) => void (d.income.annual = v ?? 0))} />
+          ) : (
+            <>
+              <p className="note">Príjmy zadajte v tabuľke „Odvody po mesiacoch“.</p>
+              <label className="check">
+                <input type="checkbox" checked={input.income.extrapolate} onChange={(e) => update((d) => void (d.income.extrapolate = e.target.checked))} />
+                Dopočítať chýbajúce mesiace priemerom
+              </label>
+            </>
+          )}
+        </fieldset>
+
+        <fieldset>
+          <legend>Výdavky</legend>
+          <div className="radio-row">
+            <label className="check"><input type="radio" name="emode" checked={input.expenses.mode === "pausal"} onChange={() => update((d) => void (d.expenses.mode = "pausal"))} /> Paušálne (60 %, max 20 000 €)</label>
+            <label className="check"><input type="radio" name="emode" checked={input.expenses.mode === "actual"} onChange={() => update((d) => void (d.expenses.mode = "actual"))} /> Skutočné</label>
+          </div>
+          {input.expenses.mode === "actual" && (
+            <NumberInput label="Skutočné výdavky za rok" value={input.expenses.actual} onChange={(v) => update((d) => void (d.expenses.actual = v ?? 0))} />
+          )}
+        </fieldset>
+
+        <fieldset>
+          <legend>Sociálne poistenie</legend>
+          <div className="field">
+            <label htmlFor="sp-regime">Režim od júla</label>
+            <select
+              id="sp-regime"
+              value={input.insurance.spRegimeH2}
+              onChange={(e) => update((d) => void (d.insurance.spRegimeH2 = e.target.value as CalcInput["insurance"]["spRegimeH2"]))}
+            >
+              <option value="standard">Podľa vymeriavacieho základu / minimum</option>
+              <option value="mikro">Mikroodvod</option>
+              <option value="none">Nie som povinne poistený</option>
+            </select>
+          </div>
+          <label className="check">
+            <input type="checkbox" checked={input.insurance.shiftOneMonth} onChange={(e) => update((d) => void (d.insurance.shiftOneMonth = e.target.checked))} />
+            Posun o mesiac (január platí za december)
+          </label>
+        </fieldset>
+      </section>
+
+      <section className="card sections">
+        <h2>Ďalšie údaje</h2>
+        <EmploymentSection input={input} update={update} />
+        <RentalSection input={input} update={update} />
+        <ChildrenSection input={input} update={update} />
+        <SpouseSection input={input} update={update} />
+        <OtherSections input={input} update={update} />
+      </section>
+
+      <button type="button" className="danger-btn" onClick={reset}>Vynulovať vstupy</button>
+    </div>
+  );
+}

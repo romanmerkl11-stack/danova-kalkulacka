@@ -54,8 +54,15 @@ Začni tým, že novej relácii povieš: **„Prečítaj HANDOFF.md a docs/PLAN.
 - `capabilities/default.json`: http len `api.statistics.sk`, `raw.githubusercontent.com`, `api.github.com`; fs `$APPDATA/**` (+ súbory vybrané v dialógu, Tauri ich pridá do scope automaticky).
 - CSP (prod bez `unsafe-inline` pre skripty, sieť len cez IPC) + `devCsp` pre Vite HMR.
 - Bundle `nsis`, `currentUser`, slovenčina. Lokálne na Macu: `npm run tauri build -- --bundles app`.
-- `src/main.tsx` je zatiaľ **len zástupná obrazovka** – nahradiť v kroku 3.
-- Ikony sú predvolené z `tauri init` → neskôr `npx tauri icon cesta/k/logo.png`.
+- Ikony sú predvolené z `tauri init` → neskôr `npx tauri icon cesta/k/logo.png` (obrázok sa dá vygenerovať cez Codex/ChatGPT).
+
+**UI – časť 1 (krok 3) ✅** – `src/App.tsx`, `src/ui/*`:
+- Záložka **Výpočet** hotová: vstupy (IČO/obchodné meno, rok, ročne/mesačne, výdavky, režim SP, zbaľovacie sekcie), súhrn + varovania, **Rezerva do limitov**, tabuľka mesiacov (editovateľná), **Postup výpočtu** s ⓘ a ✎ (prepis + „Vrátiť automatiku“), budúci rok.
+- **Dialóg povolenia** + log v `data.netLog` funguje (overené: zamietnutie → hláška + záznam v logu).
+- **Hľadanie v RPO aj podľa obchodného mena** (`searchCompanies`, `fullName` + `onlyActive=true`, max. 30 výsledkov, výber zo zoznamu). Výsledok hľadania nemá právnu formu ani SK NACE (API ich v `search` nevracia).
+- Overené v prehliadači: rok 2024, príjmy 31 500 → poistné 3 767,16, ZD 8 832,84, daň 477,95 € (zhoda s Excelom).
+- Ostatné záložky sú zatiaľ „Pripravuje sa“. IČO sa nepamätá medzi spusteniami (doriešiť s Históriou).
+- Dev v prehliadači: `npm run dev` (port 1420); `.claude/launch.json` je v nadradenom priečinku `DANE/`.
 
 ### Čo engine počíta (`calculate(input)`)
 1. **Príjmy** zadané ročne alebo po mesiacoch. Chýbajúce mesiace sa môžu dopočítať priemerom zadaných.
@@ -132,7 +139,7 @@ Hlavné zdroje: podpora.financnasprava.sk (NČZD 2026, bonus 2026, paušálne v�
      - `dialog:default`, `opener:default`.
    - CSP v `tauri.conf.json`.
    - Bundle: `targets: ["nsis"]`, `windows.nsis.installMode: "currentUser"` (netreba admin), `languages: ["Slovak"]`.
-3. **UI** (`src/main.tsx`, `src/App.tsx`, `src/ui/*`). Záložky:
+3. **UI** (`src/main.tsx`, `src/App.tsx`, `src/ui/*`) – ✅ Výpočet + dialóg povolenia hotové; zostáva História, Sadzby, Nastavenia, Ako sa to počíta. Záložky:
    - **Výpočet:**
      - vľavo vstupy: IČO s tlačidlom „Doplniť z registra“, rok, prepínač ročne/mesačne, tabuľka 12 mesiacov (príjem, SP, ZP, editovateľné), zbaľovacie sekcie (zamestnanie, prenájom, deti, manžel/ka, DDS, strata, preddavky);
      - vpravo súhrn, varovania, **panel limitov** s progress barmi a rezervou, kroky výpočtu s ⓘ (vzorec, §, zdroj, dátum, ⚠ neoverené) a ✎ na prepísanie (s „vrátiť automatiku“), odvody a preddavky na ďalší rok.

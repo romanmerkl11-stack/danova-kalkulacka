@@ -1,5 +1,5 @@
 // Lokálne úložisko. V desktopovej appke (Tauri) je to jeden súbor data.json v priečinku aplikácie
-// (napr. C:\Users\<meno>\AppData\Roaming\sk.danovakalkulacka.app\data.json). V prehliadači localStorage.
+// (napr. C:\Users\<meno>\AppData\Roaming\sk.danovakalkulacka\data.json). V prehliadači localStorage.
 // Nič sa neodosiela na internet.
 
 import type { CalcInput } from "../engine/types";
