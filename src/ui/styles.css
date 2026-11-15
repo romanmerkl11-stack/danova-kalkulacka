@@ -253,3 +253,25 @@ ul.params { margin: 6px 0 0; padding-left: 18px; }
 .quick-contrib { display: grid; gap: 6px; }
 .quick-contrib .field { display: grid; grid-template-columns: 1fr 9.5rem; align-items: center; gap: 10px; margin: 0; }
 .quick-contrib .field label { margin: 0; }
+
+/* bublina s popisom limitu pri značke posuvníka */
+.tick { pointer-events: none; outline: none; }
+.tick span, .tick::before { pointer-events: auto; cursor: help; }
+.tick span { padding: 0 2px; border-radius: 4px; }
+.tick:hover span, .tick:focus-visible span { background: var(--info-bg); color: var(--text); }
+.tick-tip {
+  display: none; position: absolute; top: calc(18px + var(--row, 0) * 14px); left: 50%; transform: translateX(-50%);
+  z-index: 20; width: max-content; max-width: 280px; white-space: normal; text-align: left;
+  padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--card); color: var(--text); font-size: 0.82rem; font-weight: 400; line-height: 1.35;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.25);
+}
+.tick.tip-left .tick-tip { left: 0; transform: none; }
+.tick.tip-right .tick-tip { left: auto; right: 0; transform: none; }
+.tick:hover .tick-tip, .tick:focus .tick-tip { display: block; }
+.tick-tip strong { display: block; margin-bottom: 2px; }
+.tick-tip-amount { margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+.tick-tip em { font-style: normal; color: var(--muted); }
+.tick-tip em.danger-text { color: var(--red); }
+@media (max-width: 640px) { .tick { padding: 0 6px; } }
+.tick:hover, .tick:focus { z-index: 30; }

@@ -115,13 +115,28 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed 
               aria-label="Príjmy za rok – posuvník"
               onChange={(e) => set({ income: Number(e.target.value) })}
             />
-            <div className="ticks" aria-hidden="true">
+            <div className="ticks">
               {ticks.map((l, idx) => {
+                const pos = (x: { limit: number }) => Math.min(1, x.limit / max);
                 const passed = quick.income > l.limit;
                 const row = rows[idx];
                 return (
-                  <div key={l.id} className={`tick${passed ? " passed" : ""}`} style={{ left: `${Math.min(100, (l.limit / max) * 100)}%`, ["--row" as string]: row }} title={`${l.label}: ${eur(l.limit)}`}>
+                  <div
+                    key={l.id}
+                    className={`tick${passed ? " passed" : ""}${pos(l) < 0.2 ? " tip-left" : pos(l) > 0.8 ? " tip-right" : ""}`}
+                    style={{ left: `${Math.min(100, pos(l) * 100)}%`, ["--row" as string]: row }}
+                    tabIndex={0}
+                    role="note"
+                    aria-label={`${l.label}: ${eur(l.limit)}. ${l.consequence}`}
+                  >
                     <span>{formatSkNumber(Math.round(l.limit))} €</span>
+                    <div className="tick-tip" role="tooltip">
+                      <strong>{l.label}</strong>
+                      <div className="tick-tip-amount">
+                        {eur(l.limit)} {passed ? <em className="danger-text">– prekročené o {eur(quick.income - l.limit)}</em> : <em>– zostáva {eur(l.limit - quick.income)}</em>}
+                      </div>
+                      <div>{l.consequence}</div>
+                    </div>
                   </div>
                 );
               })}
