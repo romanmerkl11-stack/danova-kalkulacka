@@ -70,6 +70,17 @@ Začni tým, že novej relácii povieš: **„Prečítaj HANDOFF.md a docs/PLAN.
 - **Ako sa to počíta:** text podľa enginu s hodnotami zvoleného roka.
 - Overené v prehliadači: uloženie, duplikovanie, porovnanie, zobrazenie všetkých záložiek.
 
+**Export (krok 4) ✅** – `src/export/*`, `src/ui/ExportPanel.tsx`, `src/ui/PrintReport.tsx`:
+- XLSX (exceljs, samostatný chunk): Súhrn, Mesiace (SUM), Postup, Limity (vzorec rezervy), Budúci rok. PDF cez `window.print()` + print CSS (A4). JSON export/import výpočtu (aj v Histórii).
+- **Import pôvodného Excelu bol zrušený** (rozhodnutie používateľa: appka Excel nahrádza). Overené pred zrušením: skutočný súbor → daň 477,95 €.
+
+**Výpis z účtu ✅** – `src/bank/*`, `src/ui/bank/*`:
+- PDF (pdfjs-dist 4.10.38, heuristika), XLSX/CSV (autodetekcia stĺpcov SK bánk + ručné priradenie), camt.053 XML.
+- Triedenie: príjem / SP / ZP / nezapočítať podľa názvu protistrany; ručné zmeny sa dajú zapamätať ako pravidlá (`AppData.bankRules`). Rozpis do mesiacov → `income.monthly`, `spPaid`, `zpPaid`.
+- ⚠ Neotestované na reálnom PDF/exporte banky – treba vzorové (anonymizované) výpisy. `KNOWN_IBANS` je prázdne.
+
+**Odvody** – vstupy „Moje mesačné odvody“ (SP 1–6, SP 7–12, ZP) a panel **„Z čoho sa skladajú odvody“** (fondy SP so sadzbami a účelom, VZ, ZP, budúci rok) – `src/ui/contrib.ts`, `ContributionsPanel.tsx`.
+
 - Dev v prehliadači: `npm run dev` (port 1420); `.claude/launch.json` je v nadradenom priečinku `DANE/`.
 
 ### Čo engine počíta (`calculate(input)`)
@@ -156,7 +167,7 @@ Hlavné zdroje: podpora.financnasprava.sk (NČZD 2026, bonus 2026, paušálne v�
    - **Nastavenia:** offline režim, „nepýtať sa“, povolené zdroje, log prístupov, adresa súboru sadzieb, záloha a obnova `data.json`.
    - **Ako sa to počíta:** text s vysvetlením.
    - **Dialóg povolenia** (`setNetContext` v App): ukáže účel, URL a čo sa odošle; tlačidlá *Povoliť raz / Vždy pre tento zdroj / Zamietnuť*.
-4. **Export a import:**
+4. ✅ **Export a import:** (hotovo; import Excelu zrušený)
    - XLSX cez `exceljs` (hárky Súhrn, Kroky, Mesiace, Limity; ideálne so vzorcami),
    - PDF cez `window.print()` s print CSS,
    - JSON (jeden výpočet aj celá záloha),

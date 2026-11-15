@@ -5,6 +5,9 @@ import type { Company } from "../store/storage";
 import { CompanyBox } from "./CompanyBox";
 import { ChildrenSection, EmploymentSection, OtherSections, RentalSection, SpouseSection, type Update } from "./InputSections";
 import { NumberInput } from "./NumberInput";
+import { eur } from "../engine/money";
+
+const fmt = (v: number | undefined) => (v === undefined ? "–" : eur(v));
 
 interface Props {
   input: CalcInput;
@@ -86,6 +89,32 @@ export function InputsPanel({ input, update, replaceInput, ico, onIco, company, 
             <input type="checkbox" checked={input.insurance.shiftOneMonth} onChange={(e) => update((d) => void (d.insurance.shiftOneMonth = e.target.checked))} />
             Posun o mesiac (január platí za december)
           </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Moje mesačné odvody</legend>
+          <p className="note small">Sumy, ktoré naozaj platíte. Prázdne = appka použije minimum, resp. výpočet z daňového priznania.</p>
+          <NumberInput
+            label={`Sociálne poistenie január – jún ${input.year}`}
+            value={input.insurance.spJanJun}
+            allowNull
+            placeholder={`min. ${fmt(PARAMS[input.year]?.sp.minPoistne.value)}`}
+            onChange={(v) => update((d) => void (d.insurance.spJanJun = v))}
+          />
+          <NumberInput
+            label={`Sociálne poistenie júl – december ${input.year}`}
+            value={input.insurance.spJulDec}
+            allowNull
+            placeholder={`podľa DP za ${input.year - 1}`}
+            onChange={(v) => update((d) => void (d.insurance.spJulDec = v))}
+          />
+          <NumberInput
+            label={`Zdravotné poistenie mesačne ${input.year}`}
+            value={input.insurance.zpMonthlyAmount}
+            allowNull
+            placeholder={`min. ${fmt(PARAMS[input.year]?.zp.minPreddavok.value)}`}
+            onChange={(v) => update((d) => void (d.insurance.zpMonthlyAmount = v))}
+          />
         </fieldset>
       </section>
 

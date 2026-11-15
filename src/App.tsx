@@ -7,6 +7,7 @@ import { loadData, saveData, type AppData, type Company, type SavedCalc } from "
 import { fetchParamsUpdate, checkAppUpdate, type ParamsUpdate, type ReleaseInfo } from "./net/sources";
 import { diffYears } from "./params/flatten";
 import { PermissionDialog } from "./ui/PermissionDialog";
+import { PrintReport } from "./ui/PrintReport";
 import { CalcTab } from "./ui/tabs/CalcTab";
 import { HistoryTab } from "./ui/tabs/HistoryTab";
 import { HowTab } from "./ui/tabs/HowTab";
@@ -166,6 +167,12 @@ export default function App() {
     setTab("Výpočet");
   };
 
+  const loadInput = (i: CalcInput, newIco?: string) => {
+    setData((d) => (d ? { ...d, lastInput: i, ...(newIco ? { lastIco: newIco } : {}) } : d));
+    if (newIco) setIcoState(newIco);
+    setCurrentCalcId(null);
+  };
+
   const replaceAllData = (d: AppData) => {
     setData(d);
     setIcoState(d.lastIco ?? "");
@@ -219,6 +226,11 @@ export default function App() {
           calc={calc}
           currentCalc={currentCalc}
           onSave={saveCalc}
+          companyName={company?.name ?? (ico || "Bez IČO")}
+          onLoadInput={loadInput}
+          params={params}
+          bankRules={data.bankRules ?? []}
+          onBankRules={(r) => setData((d) => (d ? { ...d, bankRules: r } : d))}
         />
       )}
       {tab === "História" && <HistoryTab data={data} setData={(fn) => setData((d) => (d ? fn(d) : d))} params={params} onOpen={openCalc} />}
@@ -227,6 +239,8 @@ export default function App() {
       )}
       {tab === "Nastavenia" && <SettingsTab data={data} setData={(fn) => setData((d) => (d ? fn(d) : d))} onReplaceData={replaceAllData} />}
       {tab === "Ako sa to počíta" && <HowTab year={input.year} params={params} />}
+
+      <PrintReport result={calc.result} input={input} title={currentCalc?.title ?? `Výpočet ${input.year}`} companyName={company?.name ?? (ico || "Bez IČO")} ico={ico} />
 
       {pending && <PermissionDialog req={pending.req} onDecide={decide} />}
     </div>

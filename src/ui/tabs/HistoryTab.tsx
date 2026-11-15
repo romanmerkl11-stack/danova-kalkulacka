@@ -4,6 +4,8 @@ import { eur, pct } from "../../engine/money";
 import type { CalcResult } from "../../engine/types";
 import type { ParamSet } from "../../params/types";
 import type { AppData, SavedCalc } from "../../store/storage";
+import { calcToJson, parseCalcJson } from "../../export/json";
+import { openFile, saveFileAs } from "../../store/storage";
 import { skDate } from "../format";
 
 interface Props {
@@ -90,6 +92,7 @@ export function HistoryTab({ data, setData, params, onOpen }: Props) {
   const [filter, setFilter] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [comparing, setComparing] = useState(false);
+  const [ioError, setIoError] = useState<string | null>(null);
   const [renaming, setRenaming] = useState<{ id: string; title: string } | null>(null);
 
   const groups = useMemo(() => {
@@ -129,6 +132,27 @@ export function HistoryTab({ data, setData, params, onOpen }: Props) {
     setRenaming(null);
   };
 
+  const exportJson = async (c: SavedCalc) => {
+    setIoError(null);
+    try {
+      await saveFileAs(`vypocet-${c.ico || "bez-ico"}-${c.year}.json`, calcToJson(c), "Výpočet (JSON)", "json");
+    } catch (e) {
+      setIoError(e instanceof Error ? e.message : String(e));
+    }
+  };
+  const importJson = async () => {
+    setIoError(null);
+    try {
+      const f = await openFile("Výpočet (JSON)", ["json"]);
+      if (!f) return;
+      const parsed = parseCalcJson(new TextDecoder().decode(f.bytes));
+      const saved: SavedCalc = { ...parsed, id: crypto.randomUUID(), updatedAt: new Date().toISOString() };
+      setData((d) => ({ ...d, calcs: [...d.calcs, saved] }));
+    } catch (e) {
+      setIoError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
   const pair = selected.length === 2 ? selected.map((id) => data.calcs.find((c) => c.id === id)) : [];
   const cmp = pair.length === 2 && pair[0] && pair[1] ? ([pair[0], pair[1]] as const) : null;
 
@@ -138,6 +162,8 @@ export function HistoryTab({ data, setData, params, onOpen }: Props) {
         <section className="card">
           <h2>História</h2>
           <p>Zatiaľ nemáte žiadne uložené výpočty.</p>
+          <div className="row"><button type="button" className="ghost" onClick={importJson}>Importovať výpočet (JSON)</button></div>
+          {ioError && <div className="box danger" role="alert">{ioError}</div>}
           <p className="note">V záložke „Výpočet“ zadajte údaje a stlačte tlačidlo „Uložiť výpočet“. Uložené výpočty sa tu zoskupia podľa IČO a môžete ich znova otvoriť, duplikovať alebo porovnať.</p>
         </section>
       </main>
@@ -147,7 +173,11 @@ export function HistoryTab({ data, setData, params, onOpen }: Props) {
   return (
     <main className="page wide">
       <section className="card">
-        <h2>História výpočtov</h2>
+        <div className="row">
+          <h2 style={{ flex: 1, margin: 0 }}>História výpočtov</h2>
+          <button type="button" className="ghost" onClick={importJson}>Importovať výpočet (JSON)</button>
+        </div>
+        {ioError && <div className="box danger" role="alert">{ioError}</div>}
         <div className="field">
           <label htmlFor="hist-filter">Filter (názov, firma, IČO)</label>
           <input id="hist-filter" type="text" value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="napr. Novák alebo 12345678" />
@@ -175,7 +205,8 @@ export function HistoryTab({ data, setData, params, onOpen }: Props) {
                       >
                         <input type="text" autoFocus value={renaming.title} onChange={(e) => setRenaming({ id: c.id, title: e.target.value })} aria-label="Nový názov" />
                         <button type="submit">Uložiť</button>
-                        <button type="button" className="ghost" onClick={() => setRenaming(null)}>Zrušiť</button>
+                        <button type="button" className="ghost" onClick={() => void exportJson(c)}>Export JSON</button>
+                    <button type="button" className="ghost" onClick={() => setRenaming(null)}>Zrušiť</button>
                       </form>
                     ) : (
                       <strong>{c.title}</strong>
@@ -193,6 +224,7 @@ export function HistoryTab({ data, setData, params, onOpen }: Props) {
                   <div className="hist-actions">
                     <button type="button" onClick={() => onOpen(c)}>Otvoriť</button>
                     <button type="button" className="ghost" onClick={() => duplicate(c)}>Duplikovať</button>
+                    <button type="button" className="ghost" onClick={() => void exportJson(c)}>Export JSON</button>
                     <button type="button" className="ghost" onClick={() => setRenaming({ id: c.id, title: c.title })}>Premenovať</button>
                     <button type="button" className="danger-btn" onClick={() => remove(c)}>Zmazať</button>
                   </div>

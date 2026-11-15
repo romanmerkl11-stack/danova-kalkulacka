@@ -4,6 +4,7 @@
 
 import type { CalcInput } from "../engine/types";
 import type { ParamSet } from "../params/types";
+import type { BankRule } from "../bank/types";
 
 export interface Company {
   ico: string;
@@ -69,6 +70,8 @@ export interface AppData {
   lastInput?: CalcInput;
   /** naposledy použité IČO */
   lastIco?: string;
+  /** naučené pravidlá pre triedenie pohybov z výpisu z účtu */
+  bankRules?: BankRule[];
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -108,6 +111,7 @@ export function normalize(raw: unknown): AppData {
     netLog: Array.isArray(r.netLog) ? r.netLog.slice(-500) : [],
     lastInput: r.lastInput,
     lastIco: typeof r.lastIco === "string" ? r.lastIco : undefined,
+    bankRules: Array.isArray(r.bankRules) ? r.bankRules : [],
   };
 }
 

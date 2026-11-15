@@ -1,6 +1,12 @@
+import { openFile } from "../../store/storage";
+import type { ParamSet } from "../../params/types";
+import type { BankRule } from "../../bank/types";
+import { BankImport } from "../bank/BankImport";
+import { ContributionsPanel } from "../ContributionsPanel";
 import { useState } from "react";
 import type { CalcInput, CalcResult } from "../../engine/types";
 import type { Company, SavedCalc } from "../../store/storage";
+import { ExportPanel } from "../ExportPanel";
 import { InputsPanel } from "../InputsPanel";
 import type { Update } from "../InputSections";
 import { LimitsPanel } from "../LimitsPanel";
@@ -21,6 +27,11 @@ interface Props {
   calc: { result: CalcResult | null; error: string | null };
   currentCalc: SavedCalc | null;
   onSave: (title: string, asNew: boolean) => void;
+  companyName: string;
+  onLoadInput: (input: CalcInput, ico?: string) => void;
+  params: ParamSet;
+  bankRules: BankRule[];
+  onBankRules: (r: BankRule[]) => void;
 }
 
 function SavePanel({ input, currentCalc, onSave }: Pick<Props, "input" | "currentCalc" | "onSave">) {
@@ -83,7 +94,8 @@ function SavePanel({ input, currentCalc, onSave }: Pick<Props, "input" | "curren
   );
 }
 
-export function CalcTab({ input, update, replaceInput, ico, onIco, company, onFound, calc, currentCalc, onSave }: Props) {
+export function CalcTab({ input, update, replaceInput, ico, onIco, company, onFound, calc, currentCalc, onSave, companyName, onLoadInput, params, bankRules, onBankRules }: Props) {
+  const [bankOpen, setBankOpen] = useState(false);
   return (
     <main className="layout">
       <InputsPanel input={input} update={update} replaceInput={replaceInput} ico={ico} onIco={onIco} company={company} onFound={onFound} />
@@ -95,14 +107,41 @@ export function CalcTab({ input, update, replaceInput, ico, onIco, company, onFo
         ) : (
           <>
             <SavePanel input={input} currentCalc={currentCalc} onSave={onSave} />
+            <ExportPanel
+              result={calc.result}
+              input={input}
+              ico={ico}
+              companyName={companyName}
+              title={currentCalc?.title ?? `Výpočet ${input.year}`}
+              onLoad={onLoadInput}
+            />
+            <section className="card bank-entry">
+              <h2>Výpis z účtu</h2>
+              <p className="note small">Nahrajte výpis (PDF, Excel, CSV alebo XML) – appka nájde príjmy a platby do Sociálnej a zdravotnej poisťovne a rozpíše ich do mesiacov. Výpis sa spracuje len v tomto počítači.</p>
+              <button type="button" onClick={() => setBankOpen(true)}>Nahrať výpis z účtu</button>
+            </section>
             <SummaryPanel result={calc.result} />
             <LimitsPanel result={calc.result} />
             <MonthsTable input={input} result={calc.result} update={update} />
             <StepsList result={calc.result} input={input} update={update} />
             <NextYearPanel result={calc.result} />
+            <ContributionsPanel result={calc.result} params={params} />
           </>
         )}
       </div>
+      {bankOpen && (
+        <BankImport
+          input={input}
+          rules={bankRules}
+          onRulesChange={onBankRules}
+          onApply={(i) => {
+            replaceInput(i);
+            setBankOpen(false);
+          }}
+          onClose={() => setBankOpen(false)}
+          openFile={openFile}
+        />
+      )}
     </main>
   );
 }

@@ -1,0 +1,27 @@
+/* Import bankového výpisu – používa premenné z styles.css */
+.bank-dialog { max-width: 1100px; max-height: 92vh; overflow-y: auto; }
+.bank-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.bank-head h2 { margin: 0 0 4px; }
+.bank-privacy { background: var(--info-bg); border-left: 5px solid var(--accent); padding: 8px 12px; border-radius: 8px; margin: 10px 0; }
+.bank-msg { padding: 8px 12px; border-radius: 8px; margin: 8px 0; background: var(--warn-bg); border-left: 5px solid var(--amber); }
+.bank-msg.err { background: var(--danger-bg); border-left-color: var(--red); }
+.bank-msg ul { margin: 4px 0 0; padding-left: 20px; }
+.bank-files { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
+.bank-step { margin: 12px 0; }
+.bank-map-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 4px 14px; }
+.bank-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+.bank-tab { background: transparent; color: var(--text); border-color: var(--border); padding: 4px 12px; border-radius: 16px; }
+.bank-tab.on { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.bank-scroll { max-height: 46vh; overflow: auto; border: 1px solid var(--border); border-radius: 8px; }
+table.bank-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.bank-table th, .bank-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+.bank-table th { position: sticky; top: 0; background: var(--card); z-index: 1; }
+.bank-table .r { text-align: right; white-space: nowrap; }
+.bank-table td.bank-wide { min-width: 200px; overflow-wrap: anywhere; }
+.bank-table select { min-width: 170px; padding: 4px 8px; }
+.bank-iban { font-size: 0.75rem; overflow-wrap: anywhere; min-width: 130px; }
+.bank-sub { color: var(--muted); font-size: 0.8rem; }
+.bank-neg { color: var(--red); }
+.bank-pos { color: var(--good); }
+.bank-out { opacity: 0.65; }
+.bank-checks { margin: 12px 0 0; }
