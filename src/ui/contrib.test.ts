@@ -7,6 +7,7 @@ describe("spBreakdown", () => {
   it("303,11 € → presný vymeriavací základ a súčet fondov sedí", () => {
     const b = spBreakdown(303.11, PARAMS[2026].sp);
     expect(b.exact).toBe(true);
+    expect(b.vz).toBe(914.4);
     expect(b.parts.map((p) => p.name)).toEqual(["nemocenské", "starobné", "invalidné", "rezervný fond"]);
     expect(Math.round(b.parts.reduce((a, p) => a + p.amount, 0) * 100) / 100).toBe(303.11);
   });

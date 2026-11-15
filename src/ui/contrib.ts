@@ -30,8 +30,10 @@ export const FUND_INFO: Record<string, string> = {
 export function spBreakdown(amount: number, sp: SpParams): SpBreakdown {
   const total = sp.funds.reduce((a, f) => a + f.rate, 0);
   const guess = round2(amount / total);
-  for (let d = 0; d <= 10; d++) {
-    for (const vz of d === 0 ? [guess] : [round2(guess + d / 100), round2(guess - d / 100)]) {
+  // minimálny / maximálny základ majú prednosť (oficiálna hodnota, aj keď viac základov dá rovnakú sumu)
+  const preferred = [sp.minVZ.value, sp.maxVZ.value];
+  for (let d = -1; d <= 10; d++) {
+    for (const vz of d === -1 ? preferred : d === 0 ? [guess] : [round2(guess + d / 100), round2(guess - d / 100)]) {
       if (vz > 0 && spFromVZ(vz, sp) === round2(amount)) {
         return { amount, vz, exact: true, parts: sp.funds.map((f) => ({ name: f.name, rate: f.rate, amount: floor2(vz * f.rate), what: FUND_INFO[f.name] ?? "" })) };
       }
