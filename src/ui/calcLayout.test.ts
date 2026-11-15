@@ -7,7 +7,9 @@ describe("resolveLayout", () => {
   });
   it("zachová uložené poradie, zahodí neznáme, doplní chýbajúce", () => {
     const r = resolveLayout([{ id: "card-export", visible: false }, { id: "xx", visible: true }, { id: "card-steps", visible: true }]);
-    expect(r[0]).toEqual({ id: "card-export", visible: false });
+    // uložené karty si zachovajú vzájomné poradie a viditeľnosť
+    expect(r.find((x) => x.id === "card-export")).toEqual({ id: "card-export", visible: false });
+    expect(r.findIndex((x) => x.id === "card-export")).toBeLessThan(r.findIndex((x) => x.id === "card-steps"));
     expect(r.length).toBe(CALC_CARDS.length);
     expect(r.some((x) => x.id === "xx")).toBe(false);
   });
