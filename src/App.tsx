@@ -1,3 +1,4 @@
+import { ProfileTitle } from "./ui/ProfileSwitch";
 import { effectiveParams } from "./params/merge";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { calculate, defaultInput } from "./engine/calc";
@@ -192,10 +193,26 @@ export default function App() {
     setPending(null);
   };
 
+  // profil (živnosť / zamestnanec / oboje) – spoločný pre obe záložky, určuje aj farebný akcent appky
+  const profile = (tab === "Rýchly výpočet" ? data.quick?.profile : input.profile) ?? data.quick?.profile ?? input.profile ?? "szco";
+
   return (
-    <div className="app">
+    <div className="app" data-profile={profile}>
       <header className="app-header">
-        <h1>Daňová kalkulačka SZČO</h1>
+        <ProfileTitle
+          value={profile}
+          onChange={(p) =>
+            setData((d) =>
+              d
+                ? {
+                    ...d,
+                    quick: { ...(d.quick ?? { year: startYear(), income: 0, expenses: null }), profile: p },
+                    lastInput: { ...(d.lastInput ?? defaultInput(startYear())), profile: p },
+                  }
+                : d,
+            )
+          }
+        />
         <nav className="tabs" role="tablist" aria-label="Sekcie">
           {TABS.map((t) => (
             <button key={t} type="button" role="tab" aria-selected={tab === t} className={tab === t ? "tab active" : "tab"} onClick={() => setTab(t)}>

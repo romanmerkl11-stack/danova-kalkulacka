@@ -5,7 +5,6 @@ import type { Company } from "../store/storage";
 import { Card } from "./Card";
 import { CompanyBox } from "./CompanyBox";
 import { OtherIncomeSection } from "./OtherIncomeSection";
-import { ProfileSwitch } from "./ProfileSwitch";
 import { ChildrenSection, EmploymentSection, OtherSections, RentalSection, SpouseSection, type Update } from "./InputSections";
 import { ExpenseRows } from "./ExpenseRows";
 import { expenseTotal } from "./expenseItems";
@@ -41,7 +40,6 @@ export function InputsPanel({ nickname, onNickname, input, update, replaceInput,
       <CompanyBox nickname={nickname} onNickname={onNickname} ico={ico} onIco={onIco} company={company} onFound={onFound} title={emp ? "Kto počíta" : "Podnikateľ"} />
 
       <Card id="card-basic" title="Základné údaje">
-        <ProfileSwitch value={profile} onChange={(p) => update((d) => void (d.profile = p))} />
         <div className="field">
           <label htmlFor="year">Zdaňovacie obdobie (rok)</label>
           <select id="year" value={input.year} onChange={(e) => update((d) => void (d.year = Number(e.target.value)))}>

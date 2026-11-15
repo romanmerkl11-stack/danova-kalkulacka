@@ -9,7 +9,6 @@ import { formatSkNumber } from "../format";
 import { StepsList } from "../StepsList";
 import { AssignNotice } from "../AssignNotice";
 import { filingHeadline } from "../FilingPanel";
-import { ProfileSwitch } from "../ProfileSwitch";
 import { staircase } from "../quick";
 import { buildQuickInput, contributionLimits, contributionThresholds, incomeLimits, taxStartThreshold, SLIDER_STEP, sliderMax, toDetailedInput, withoutOwnContributions, type QuickState } from "../quick";
 
@@ -108,9 +107,6 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed 
 
   return (
     <main className="quick">
-      <div className="quick-profile">
-        <ProfileSwitch value={profile} onChange={(p) => set({ profile: p })} />
-      </div>
       <div className="quick-inputs">
         <section className="card" aria-label="Príjmy">
           <div className="quick-head">
@@ -165,15 +161,15 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed 
           <section className="card" aria-label="Údaje z potvrdenia a prenájom">
             <div className="quick-head"><h2>Z potvrdenia o zdaniteľnej mzde</h2></div>
             <div className="quick-contrib">
-              <NumberInput label="Poistné zamestnanca" allowNull value={quick.empInsurance ?? null} placeholder="0,00" onChange={(v) => set({ empInsurance: v === null ? null : Math.max(0, v) })} />
-              <NumberInput label="Zrazené preddavky na daň" allowNull value={quick.empWithheld ?? null} placeholder="0,00" onChange={(v) => set({ empWithheld: v === null ? null : Math.max(0, v) })} />
+              <NumberInput label="Poistné" allowNull value={quick.empInsurance ?? null} placeholder="0,00" onChange={(v) => set({ empInsurance: v === null ? null : Math.max(0, v) })} />
+              <NumberInput label="Preddavky" allowNull value={quick.empWithheld ?? null} placeholder="0,00" onChange={(v) => set({ empWithheld: v === null ? null : Math.max(0, v) })} />
             </div>
             <p className="note small">Údaje nájdete na Potvrdení od zamestnávateľa. Prázdne pole = 0 €.</p>
             <div className="quick-head quick-contrib-head"><h2>Prenájom (voliteľné)</h2></div>
             <div className="quick-contrib">
-              <NumberInput label="Nájomné mesačne" allowNull value={quick.rentMonthly ?? null} placeholder="0,00" onChange={(v) => set({ rentMonthly: v === null ? null : Math.max(0, v) })} />
+              <NumberInput label="Nájom mesačne" allowNull value={quick.rentMonthly ?? null} placeholder="0,00" onChange={(v) => set({ rentMonthly: v === null ? null : Math.max(0, v) })} />
               <NumberInput label="Mesiacov" suffix="" allowNull value={quick.rentMonths ?? 12} placeholder="12" onChange={(v) => set({ rentMonths: v === null ? null : Math.min(12, Math.max(0, Math.round(v))) })} />
-              <NumberInput label="Výdavky na prenájom (ročne)" allowNull value={quick.rentExpenses ?? null} placeholder="0,00" onChange={(v) => set({ rentExpenses: v === null ? null : Math.max(0, v) })} />
+              <NumberInput label="Výdavky za rok" allowNull value={quick.rentExpenses ?? null} placeholder="0,00" onChange={(v) => set({ rentExpenses: v === null ? null : Math.max(0, v) })} />
             </div>
           </section>
         )}
@@ -218,8 +214,8 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed 
               <div className="quick-head quick-contrib-head"><h2>Zamestnanie</h2></div>
               <div className="quick-contrib">
                 <NumberInput label="Úhrn príjmov" allowNull value={quick.empGross ?? null} placeholder="0,00" onChange={(v) => set({ empGross: v === null ? null : Math.max(0, v) })} />
-                <NumberInput label="Poistné zamestnanca" allowNull value={quick.empInsurance ?? null} placeholder="0,00" onChange={(v) => set({ empInsurance: v === null ? null : Math.max(0, v) })} />
-                <NumberInput label="Zrazené preddavky" allowNull value={quick.empWithheld ?? null} placeholder="0,00" onChange={(v) => set({ empWithheld: v === null ? null : Math.max(0, v) })} />
+                <NumberInput label="Poistné" allowNull value={quick.empInsurance ?? null} placeholder="0,00" onChange={(v) => set({ empInsurance: v === null ? null : Math.max(0, v) })} />
+                <NumberInput label="Preddavky" allowNull value={quick.empWithheld ?? null} placeholder="0,00" onChange={(v) => set({ empWithheld: v === null ? null : Math.max(0, v) })} />
               </div>
               <p className="note small">Z Potvrdenia o zdaniteľnej mzde. Prázdne pole = 0 €.</p>
             </div>

@@ -253,7 +253,7 @@ ul.params { margin: 6px 0 0; padding-left: 18px; }
 .quick .card { padding: 14px 16px; }
 .quick-contrib-head { margin-top: 14px; }
 .quick-contrib { display: grid; gap: 6px; }
-.quick-contrib .field { display: grid; grid-template-columns: 1fr 9.5rem; align-items: center; gap: 10px; margin: 0; }
+.quick-contrib .field { display: grid; grid-template-columns: minmax(0, 1fr) 7.6rem; align-items: center; gap: 10px; margin: 0; }
 .quick-contrib .field label { margin: 0; }
 
 /* bublina s popisom limitu pri značke posuvníka */
@@ -386,3 +386,22 @@ ul.params { margin: 6px 0 0; padding-left: 18px; }
 
 /* rovnaká výška hlavičiek kariet → polia s číslami v rovnakej výške */
 .quick .quick-head { min-height: 42px; margin-bottom: 8px; }
+
+/* nadpis appky s výberom profilu */
+.profile-title { position: relative; display: inline-block; }
+.profile-title h1 { margin: 0; }
+.profile-title-btn { display: inline-flex; align-items: center; gap: 10px; padding: 2px 6px; margin-left: -6px; border: 0; border-radius: 8px; background: none; color: inherit; font: inherit; cursor: pointer; }
+.profile-title-btn:hover, .profile-title-btn[aria-expanded="true"] { background: var(--info-bg); }
+.profile-chev { width: 0.45em; height: 0.45em; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: translateY(-25%) rotate(45deg); }
+.profile-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 50; min-width: 240px; margin: 0; padding: 6px; list-style: none; border: 1px solid var(--border); border-radius: 10px; background: var(--card); box-shadow: 0 10px 30px rgb(0 0 0 / 0.3); }
+.profile-menu button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px; border: 0; border-radius: 6px; background: none; color: var(--text); font: inherit; font-size: 1rem; text-align: left; cursor: pointer; }
+.profile-menu button:hover, .profile-menu button.active { background: var(--info-bg); }
+.profile-check { width: 1em; color: var(--accent); font-weight: 700; }
+
+/* farebný akcent podľa profilu: SZČO modrá (predvolená), zamestnanec žltá, oboje zelená */
+.app[data-profile="zamestnanec"] { --accent: #9a6b00; --accent-text: #ffffff; --info-bg: #fff4d1; }
+.app[data-profile="oboje"] { --accent: #1e7a3c; --accent-text: #ffffff; --info-bg: #e2f5e9; }
+@media (prefers-color-scheme: dark) {
+  .app[data-profile="zamestnanec"] { --accent: #f2c23b; --accent-text: #1a1400; --info-bg: #3a3115; }
+  .app[data-profile="oboje"] { --accent: #5fcf86; --accent-text: #06200f; --info-bg: #173a24; }
+}
