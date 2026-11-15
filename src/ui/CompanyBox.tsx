@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { NetDenied } from "../net/net";
-import { lookupCompany, registryLinks, searchCompanies, validIco } from "../net/sources";
+import { lookupCompany, registryLinks, searchCompanies, validIco, withDetail } from "../net/sources";
 import type { Company } from "../store/storage";
 
 interface Props {
@@ -51,7 +51,7 @@ export function CompanyBox({ ico, onIco, company, onFound }: Props) {
       } else {
         const list = await searchCompanies(q);
         if (list.length === 0) setMsg(`Nenašiel sa žiadny aktívny podnikateľ ani firma s názvom „${q}“.`);
-        else if (list.length === 1) pick(list[0]);
+        else if (list.length === 1) await pick(list[0]);
         else setHits(list);
       }
     } catch (e) {
@@ -61,11 +61,17 @@ export function CompanyBox({ ico, onIco, company, onFound }: Props) {
     }
   };
 
-  const pick = (c: Company) => {
+  const pick = async (c: Company) => {
     setHits(null);
     setQuery(c.ico);
     onIco(c.ico);
     onFound(c);
+    setBusy(true);
+    try {
+      onFound(await withDetail(c));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -98,7 +104,7 @@ export function CompanyBox({ ico, onIco, company, onFound }: Props) {
           <ul className="hit-list">
             {hits.map((c) => (
               <li key={c.ico}>
-                <button type="button" className="hit" onClick={() => pick(c)}>
+                <button type="button" className="hit" onClick={() => void pick(c)}>
                   <strong>{c.name}</strong>
                   <span className="small">IČO {c.ico}{c.address ? ` · ${c.address}` : ""}</span>
                 </button>
@@ -116,6 +122,18 @@ export function CompanyBox({ ico, onIco, company, onFound }: Props) {
           {company.address && (<><dt>Adresa</dt><dd>{company.address}</dd></>)}
           {company.legalForm && (<><dt>Právna forma</dt><dd>{company.legalForm}</dd></>)}
           {company.nace && (<><dt>SK NACE</dt><dd>{company.nace}</dd></>)}
+          {company.established && (<><dt>Vznik</dt><dd>{company.established.split("-").reverse().map(Number).join(". ")}</dd></>)}
+          {company.activities && (
+            <>
+              <dt>Predmety podnikania</dt>
+              <dd>
+                <details>
+                  <summary>{company.activities.length} živností</summary>
+                  <ul className="small">{company.activities.map((a) => <li key={a}>{a}</li>)}</ul>
+                </details>
+              </dd>
+            </>
+          )}
         </dl>
       )}
       {validIco(ico) && (

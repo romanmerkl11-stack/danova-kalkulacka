@@ -55,3 +55,23 @@ describe("parseRpoSearch", () => {
     expect(parseRpoSearch("x", { results: [] })).toEqual([]);
   });
 });
+
+describe("parseRpo – detail subjektu", () => {
+  it("načíta id, právnu formu, SK NACE a aktívne predmety podnikania", () => {
+    const c = parseRpo("12345678", {
+      id: 42,
+      identifiers: [{ value: "12345678" }],
+      fullNames: [{ value: "Ján Novák", validFrom: "2013-04-03" }],
+      legalForms: [{ value: { value: "Podnikateľ-fyzická osoba-nezapísaný v obchodnom registri", code: "101" }, validFrom: "2013-04-03" }],
+      statisticalCodes: { mainActivity: { code: "4335", value: "Ostatné stavebné kompletizačné a dokončovacie práce" } },
+      activities: [
+        { economicActivityDescription: "Sprostredkovateľská činnosť v oblasti obchodu", validFrom: "2013-04-03" },
+        { economicActivityDescription: "Zrušená živnosť", validFrom: "2013-04-03", validTo: "2015-01-01" },
+      ],
+    })!;
+    expect(c.rpoId).toBe(42);
+    expect(c.legalForm).toContain("fyzická osoba");
+    expect(c.nace).toBe("4335 Ostatné stavebné kompletizačné a dokončovacie práce");
+    expect(c.activities).toEqual(["Sprostredkovateľská činnosť v oblasti obchodu"]);
+  });
+});

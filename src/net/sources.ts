@@ -51,6 +51,9 @@ function parseRpoEntry(ico: string, e: any): Company | null {
         .join(", ")
     : undefined;
   const lf = latest<any>(e.legalForms);
+  const activities: string[] = Array.isArray(e.activities)
+    ? e.activities.filter((a: any) => !a?.validTo && a?.economicActivityDescription).map((a: any) => String(a.economicActivityDescription))
+    : [];
   const main = e.statisticalCodes?.mainActivity;
   return {
     ico,
@@ -59,6 +62,8 @@ function parseRpoEntry(ico: string, e: any): Company | null {
     legalForm: lf?.value?.value ?? lf?.value,
     nace: main ? [main.code, main.value].filter(Boolean).join(" ") : undefined,
     established: e.establishment,
+    rpoId: typeof e.id === "number" ? e.id : undefined,
+    activities: activities.length ? activities : undefined,
     fetchedFrom: "Register právnických osôb (api.statistics.sk)",
     fetchedAt: new Date().toISOString(),
   };
@@ -72,12 +77,32 @@ export async function lookupCompany(ico: string): Promise<Company | null> {
   const url = `https://api.statistics.sk/rpo/v1/search?identifier=${encodeURIComponent(ico)}`;
   const res = await netFetch({
     source: "rpo",
-    purpose: `Zistiť obchodné meno, adresu, právnu formu a SK NACE pre IČO ${ico}`,
+    purpose: `Zistiť obchodné meno, adresu, právnu formu, SK NACE a predmety podnikania pre IČO ${ico} (vyhľadanie a potom detail subjektu)`,
     url,
     sends: `IČO ${ico}`,
   });
   if (!res.ok) throw new Error(`Register odpovedal chybou ${res.status}.`);
-  return parseRpo(ico, await res.json());
+  const basic = parseRpo(ico, await res.json());
+  return basic ? withDetail(basic) : null;
+}
+
+/** Doplní právnu formu, SK NACE a predmety podnikania z detailu subjektu (vyhľadávanie ich nevracia). Pri chybe vráti pôvodné údaje. */
+export async function withDetail(c: Company): Promise<Company> {
+  if (!c.rpoId) return c;
+  try {
+    const res = await netFetch({
+      source: "rpo",
+      purpose: `Načítať detail subjektu ${c.name}`,
+      url: `https://api.statistics.sk/rpo/v1/entity/${c.rpoId}?showHistoricalData=false&showOrganizationUnits=false`,
+      sends: `interné číslo subjektu v registri (${c.rpoId})`,
+      followUp: true,
+    });
+    if (!res.ok) return c;
+    const d = parseRpo(c.ico, await res.json());
+    return d ? { ...c, ...Object.fromEntries(Object.entries(d).filter(([, v]) => v !== undefined)) } : c;
+  } catch {
+    return c;
+  }
 }
 
 /** Hľadanie v RPO podľa obchodného mena (len nezaniknuté subjekty). */
@@ -86,7 +111,7 @@ export async function searchCompanies(name: string): Promise<Company[]> {
   const url = `https://api.statistics.sk/rpo/v1/search?fullName=${encodeURIComponent(q)}&onlyActive=true`;
   const res = await netFetch({
     source: "rpo",
-    purpose: `Nájsť podnikateľov a firmy, ktorých obchodné meno obsahuje „${q}“`,
+    purpose: `Nájsť podnikateľov a firmy, ktorých obchodné meno obsahuje „${q}“ (po výbere sa načíta aj detail subjektu)`,
     url,
     sends: `hľadaný text „${q}“`,
   });

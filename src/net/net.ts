@@ -10,6 +10,8 @@ export interface NetRequest {
   url: string;
   /** čo sa odošle (napr. „IČO 12345678“) */
   sends: string;
+  /** nadväzujúca požiadavka na ten istý zdroj, ktorú už pokryl predchádzajúci súhlas (napr. detail vybraného subjektu) */
+  followUp?: boolean;
 }
 
 export type Decision = "once" | "always" | "deny";
@@ -56,7 +58,7 @@ export async function netFetch(req: NetRequest, init?: RequestInit): Promise<Res
     ctx.log({ ...base, result: "zamietnuté", detail: "offline režim" });
     throw new NetDenied("Appka je v offline režime (Nastavenia).");
   }
-  if (!s.neverAsk && !s.alwaysAllow[req.source]) {
+  if (!s.neverAsk && !s.alwaysAllow[req.source] && !req.followUp) {
     const d = await ctx.ask(req);
     if (d === "deny") {
       ctx.log({ ...base, result: "zamietnuté" });

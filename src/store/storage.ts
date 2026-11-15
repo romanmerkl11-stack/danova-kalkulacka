@@ -14,6 +14,10 @@ export interface Company {
   nace?: string;
   established?: string;
   dic?: string;
+  /** interné id v Registri právnických osôb (pre načítanie detailu) */
+  rpoId?: number;
+  /** predmety podnikania (živnosti) */
+  activities?: string[];
   /** odkiaľ a kedy sa údaje doťahovali */
   fetchedFrom?: string;
   fetchedAt?: string;
