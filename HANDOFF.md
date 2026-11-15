@@ -203,3 +203,17 @@ npm run tauri dev   # desktop appka (po kroku 2)
 
 - Pred commitom do verejného repa zváž, či tam má byť `reference/DPFOB_DP_2024_predpoklad.xlsx`. Obsahuje osobné údaje (DIČ, príjmy), preto ho daj do `.gitignore` alebo repo nastav ako súkromné.
 - Git: projekt má lokálny git s 1 commitom plus zmeny v tomto balíku. Vzdialené repo zatiaľ nie je nastavené.
+
+## 8. ROZPRACOVANÉ – požiadavky používateľa (15. 11. 2026), poradie pre ďalšiu session
+Hotové: spoločná zbaľovacia karta `src/ui/Card.tsx` (+ CSS `.ui-card`) – zatiaľ nikde nepoužitá.
+1. **Uložiť výpočet** nebude samostatná karta → plávajúca lišta na konci stránky (Uložiť + rýchle odkazy na sekcie/karty, `#id` z Card).
+2. **Ukladanie primárne anonymne pod prezývkou**; IČO voliteľné. V karte Podnikateľ len malé tlačidlo „Hľadať“ na konci, **bez odkazov** na ZRSR/ORSR/FS/RPO.
+3. **Plán: s.r.o. úplne vyhodiť, namiesto toho „zamestnanec“** (upresniť s používateľom: výpočet čistej mzdy / kombinácia so živnosťou).
+4. **Výdavky po riadkoch** (napr. pri nájme: voda, plyn, telefón, internet/TV, nájom) – meno + mesačná suma (× mesiace) → súčet; použiť v Prenájme aj v skutočných výdavkoch.
+5. **Výpočet:** navrchu Postup výpočtu, pod ním Odvody po mesiacoch, potom ostatné karty – **predvolene zbalené**.
+6. **Nastavenia:** výber, ktoré karty sa na záložke Výpočet zobrazia a v akom poradí.
+7. **Rýchly výpočet:** dole zbalený Postup výpočtu; pridať limit „od akého príjmu začnem platiť daň“ (značka na posuvníku + bublina).
+8. **Zjednotiť šípky:** zbaľuje sa celá karta (Card), vnútri všetko rozbalené (napr. „Z čoho sa skladajú odvody“ bez vnorených šípok).
+9. Farby podľa systému (tmavý režim) – používateľ OK.
+10. Potom prejsť celú appku a navrhnúť vylepšenia.
+Web: https://romanmerkl11-stack.github.io/danova-kalkulacka/ (push do main = nasadenie).
