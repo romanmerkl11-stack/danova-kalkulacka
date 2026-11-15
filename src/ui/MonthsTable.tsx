@@ -13,7 +13,6 @@ interface Props {
 }
 
 function Table({ input, result, update }: Props) {
-  const monthly = input.income.mode === "monthly";
   const rows = result.months;
   const total = (f: (r: (typeof rows)[number]) => number) => rows.reduce((a, r) => a + f(r), 0);
 
@@ -39,17 +38,7 @@ function Table({ input, result, update }: Props) {
                 <th scope="row">{m}</th>
                 <td>{r.covers}</td>
                 <td className={`r ${r.incomeProjected ? "projected" : ""}`}>
-                  {monthly ? (
-                    <NumberInput
-                      allowNull
-                      ariaLabel={`Príjem – ${m}`}
-                      value={input.income.monthly[i]}
-                      placeholder={formatSkNumber(r.income)}
-                      onChange={(v) => update((d) => void (d.income.monthly[i] = v))}
-                    />
-                  ) : (
-                    eur(r.income)
-                  )}
+                  {eur(r.income)}
                 </td>
                 <td className="r">
                   <span className="cell-with-reset">

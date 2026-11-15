@@ -1,4 +1,4 @@
-import { defaultInput } from "../engine/calc";
+import { defaultInput, MONTHS } from "../engine/calc";
 import type { CalcInput } from "../engine/types";
 import { PARAMS } from "../params/data";
 import type { Company } from "../store/storage";
@@ -60,7 +60,22 @@ export function InputsPanel({ nickname, onNickname, input, update, replaceInput,
             <NumberInput label="Príjmy za rok" value={input.income.annual} onChange={(v) => update((d) => void (d.income.annual = v ?? 0))} />
           ) : (
             <>
-              <p className="note">Príjmy zadajte v tabuľke „Odvody po mesiacoch“.</p>
+              <div className="month-inputs">
+                {MONTHS.map((m, i) => (
+                  <NumberInput
+                    key={m}
+                    label={m}
+                    allowNull
+                    value={input.income.monthly[i]}
+                    placeholder="—"
+                    onChange={(v) => update((d) => void (d.income.monthly[i] = v))}
+                  />
+                ))}
+              </div>
+              <p className="note">
+                Zadané spolu: <strong>{eur(input.income.monthly.reduce<number>((a, v) => a + (v ?? 0), 0))}</strong>
+                {input.income.extrapolate ? " – nezadané mesiace sa dopočítajú priemerom (výsledok v Postupe výpočtu)." : ""}
+              </p>
               <label className="check">
                 <input type="checkbox" checked={input.income.extrapolate} onChange={(e) => update((d) => void (d.income.extrapolate = e.target.checked))} />
                 Dopočítať chýbajúce mesiace priemerom

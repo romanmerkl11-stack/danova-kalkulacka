@@ -151,7 +151,10 @@ export async function fetchParamsUpdate(url: string): Promise<ParamsUpdate> {
 
 export interface ReleaseInfo {
   version: string;
+  /** stránka vydania na GitHube */
   url: string;
+  /** priamy odkaz na inštalátor .exe (ak je vo vydaní) */
+  downloadUrl?: string;
   notes: string;
 }
 
@@ -161,5 +164,6 @@ export async function checkAppUpdate(repo: string): Promise<ReleaseInfo | null> 
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`GitHub odpovedal ${res.status}.`);
   const j = await res.json();
-  return { version: String(j.tag_name ?? "").replace(/^v/, ""), url: j.html_url, notes: j.body ?? "" };
+  const exe = Array.isArray(j.assets) ? j.assets.find((a: any) => typeof a?.name === "string" && /\.exe$/i.test(a.name)) : undefined;
+  return { version: String(j.tag_name ?? "").replace(/^v/, ""), url: j.html_url, downloadUrl: exe?.browser_download_url, notes: j.body ?? "" };
 }

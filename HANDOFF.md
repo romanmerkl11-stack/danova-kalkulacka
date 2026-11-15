@@ -227,3 +227,11 @@ Web: https://romanmerkl11-stack.github.io/danova-kalkulacka/ (push do main = nas
 - Rýchly výpočet: suma navrchu kariet, limity pod posuvníkom **v schodoch** (prvý najnižšie) so zvislou čiarkou k číslu, popis len v bubline.
 - 2 %: plávajúci odznak vpravo dole (`AssignNotice` + `assign.css`) na oboch záložkách.
 - **Sadzby majú dátum `PARAMS_DATE` (src/params/data.ts) – pri každej zmene sadzieb ho zvýš a spusti `npm run params`.** Prijaté sadzby staršie ako PARAMS_DATE sa ignorujú (`src/params/merge.ts`), Sadzby ukážu upozornenie.
+
+## 11. Poradca, ikona, vydania pre Windows (15. 11. 2026)
+- Záložka **Poradca** (`src/ui/tabs/AdvisorTab.tsx`, `src/ui/advisor/*`): koľko si mesačne odkladať, kalendár povinností + export .ics, paušál vs. skutočné výdavky, FYI medziročné porovnanie.
+- **Ikona** vygenerovaná cez Codex/ChatGPT → `assets/icon.png`, `npx tauri icon assets/icon.png`; favicon webu `public/favicon.png`.
+- **Vydania:** `.github/workflows/release.yml` – značka `v*` zostaví NSIS `.exe` na windows-latest a nahrá do Releases. Návod pre mamu v README.
+- **Nová verzia:** desktop pri štarte (predvolene zapnuté, s povolením) zistí posledné vydanie; pruh „Je k dispozícii nová verzia … Stiahnuť“ otvorí priamo `.exe`. Odkazy na web sa v desktope otvárajú v systémovom prehliadači (`src/net/open.ts`).
+- Mesačné príjmy sa zadávajú priamo v Základných údajoch (12 polí), tabuľka mesiacov ich len zobrazuje.
+- Odložené do plánu: ťahák „čo kam napísať“ do DP.

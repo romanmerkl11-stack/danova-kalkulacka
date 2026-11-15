@@ -82,6 +82,8 @@ export interface AppData {
   lastIco?: string;
   /** naposledy použitý názov */
   lastNickname?: string;
+  /** skutočné výdavky zadané v záložke Poradca (nemení výpočet) */
+  advisorActualExpenses?: number;
   /** naučené pravidlá pre triedenie pohybov z výpisu z účtu */
   bankRules?: BankRule[];
   /** stav záložky Rýchly výpočet */
@@ -107,7 +109,7 @@ export const DEFAULT_SETTINGS: Settings = {
   offline: false,
   alwaysAllow: {},
   checkParamsOnStart: false,
-  checkUpdatesOnStart: false,
+  checkUpdatesOnStart: true,
   paramsUrl: "https://raw.githubusercontent.com/romanmerkl11-stack/danova-kalkulacka/main/params/params.json",
   updateRepo: "romanmerkl11-stack/danova-kalkulacka",
 };
@@ -158,6 +160,7 @@ export function normalize(raw: unknown): AppData {
     lastIco: typeof r.lastIco === "string" ? r.lastIco : undefined,
     lastNickname: typeof r.lastNickname === "string" ? r.lastNickname : undefined,
     bankRules: Array.isArray(r.bankRules) ? r.bankRules : [],
+    advisorActualExpenses: typeof r.advisorActualExpenses === "number" && Number.isFinite(r.advisorActualExpenses) && r.advisorActualExpenses >= 0 ? r.advisorActualExpenses : undefined,
     quick:
       r.quick && typeof r.quick === "object" && Number.isFinite(r.quick.year) && Number.isFinite(r.quick.income)
         ? {

@@ -138,3 +138,7 @@ Schválené používateľom 15. 11. 2026; s.r.o. **vypustené**. Cieľ: zamestna
 - Inštalátor: nainštalovať na čistý Windows (VM / CI runner) bez admin práv, spustiť, urobiť výpočet, odinštalovať; overiť, že bez siete
   appka štartuje a nerobí žiadny request (log + firewall).
 - Ručne: porovnanie výsledku s reálnym DP 2024.
+
+## Neskôr (odložené používateľom 15. 11. 2026)
+- **Ťahák „čo kam napísať“ do DP** – zoznam riadok tlačiva DPFO A/B → suma (appka už pozná `dpRow`). Nízka priorita: appku používa autor a mama, ktorá DP vypĺňať vie.
+- Zamietnuté: graf pod posuvníkom (menej prehľadné), tempo voči limitom v Rýchlom výpočte.

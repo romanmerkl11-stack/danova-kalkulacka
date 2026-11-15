@@ -1,3 +1,4 @@
+import { openExternal } from "./net/open";
 import { ProfileTitle } from "./ui/ProfileSwitch";
 import { effectiveParams } from "./params/merge";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -5,7 +6,7 @@ import { calculate, defaultInput } from "./engine/calc";
 import type { CalcInput } from "./engine/types";
 import { setNetContext, type Decision, type NetRequest } from "./net/net";
 import { PARAMS } from "./params/data";
-import { loadData, saveData, type AppData, type Company, type SavedCalc } from "./store/storage";
+import { isTauri, loadData, saveData, type AppData, type Company, type SavedCalc } from "./store/storage";
 import { fetchParamsUpdate, checkAppUpdate, type ParamsUpdate, type ReleaseInfo } from "./net/sources";
 import { diffYears } from "./params/flatten";
 import { PermissionDialog } from "./ui/PermissionDialog";
@@ -15,10 +16,11 @@ import { CalcTab } from "./ui/tabs/CalcTab";
 import { HistoryTab } from "./ui/tabs/HistoryTab";
 import { HowTab } from "./ui/tabs/HowTab";
 import { RatesTab } from "./ui/tabs/RatesTab";
+import { AdvisorTab } from "./ui/tabs/AdvisorTab";
 import { SettingsTab } from "./ui/tabs/SettingsTab";
 import { APP_VERSION, isNewerVersion } from "./version";
 
-const TABS = ["Rýchly výpočet", "Výpočet", "História", "Sadzby", "Nastavenia", "Ako sa to počíta"] as const;
+const TABS = ["Rýchly výpočet", "Výpočet", "História", "Sadzby", "Poradca", "Nastavenia", "Ako sa to počíta"] as const;
 type Tab = (typeof TABS)[number];
 
 const years = Object.keys(PARAMS).map(Number);
@@ -43,6 +45,19 @@ export default function App() {
   const [pending, setPending] = useState<Pending | null>(null);
   const dataRef = useRef<AppData | null>(null);
   const loadedRef = useRef(false);
+
+  // desktop: odkazy na web (target=_blank) otvoriť v predvolenom prehliadači, nie vo vnútri appky
+  useEffect(() => {
+    if (!isTauri()) return;
+    const onClick = (e: MouseEvent) => {
+      const a = (e.target as HTMLElement | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (!a || !/^https?:/i.test(a.href)) return;
+      e.preventDefault();
+      void openExternal(a.href);
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, []);
 
   useEffect(() => {
     loadData().then((d) => {
@@ -94,7 +109,8 @@ export default function App() {
         })
         .catch(() => undefined);
     }
-    if (st.checkUpdatesOnStart && !st.updateRepo.includes("OWNER")) {
+    // kontrola novej verzie má zmysel len v desktopovej appke (web je vždy aktuálny)
+    if (isTauri() && st.checkUpdatesOnStart && !st.updateRepo.includes("OWNER")) {
       checkAppUpdate(st.updateRepo)
         .then((r) => {
           if (r && isNewerVersion(r.version, APP_VERSION)) setAppRelease(r);
@@ -231,8 +247,10 @@ export default function App() {
       )}
       {appRelease && (
         <div className="banner" role="status">
-          <span>Je dostupná nová verzia aplikácie {appRelease.version}.</span>
-          <a href={appRelease.url} target="_blank" rel="noreferrer">Stiahnuť</a>
+          <span>
+            Je k dispozícii nová verzia <strong>{appRelease.version}</strong> (máte {APP_VERSION}). Stiahnite ju a spustite – nainštaluje sa cez starú, výpočty zostanú.
+          </span>
+          <button type="button" onClick={() => void openExternal(appRelease.downloadUrl ?? appRelease.url)}>Stiahnuť</button>
           <button type="button" className="icon ghost" onClick={() => setAppRelease(null)} aria-label="Zavrieť oznámenie">×</button>
         </div>
       )}
@@ -276,6 +294,9 @@ export default function App() {
       {tab === "História" && <HistoryTab data={data} setData={(fn) => setData((d) => (d ? fn(d) : d))} params={params} onOpen={openCalc} />}
       {tab === "Sadzby" && (
         <RatesTab data={data} setData={(fn) => setData((d) => (d ? fn(d) : d))} params={params} defaultYear={input.year} update={paramsUpdate} setUpdate={setParamsUpdate} />
+      )}
+      {tab === "Poradca" && (
+        <AdvisorTab data={data} setData={(fn) => setData((d) => (d ? fn(d) : d))} input={input} result={calc.result} error={calc.error} params={params} />
       )}
       {tab === "Nastavenia" && <SettingsTab data={data} setData={(fn) => setData((d) => (d ? fn(d) : d))} onReplaceData={replaceAllData} />}
       {tab === "Ako sa to počíta" && <HowTab year={input.year} params={params} />}

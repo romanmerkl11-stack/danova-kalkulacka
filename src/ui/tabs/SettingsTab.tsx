@@ -222,7 +222,7 @@ export function SettingsTab({ data, setData, onReplaceData }: Props) {
           (upd.release && isNewerVersion(upd.release.version, APP_VERSION) ? (
             <p role="status">
               Je dostupná nová verzia <strong>{upd.release.version}</strong>.{" "}
-              <a href={upd.release.url} target="_blank" rel="noreferrer">Stiahnuť</a>
+              <a href={upd.release.downloadUrl ?? upd.release.url} target="_blank" rel="noreferrer">Stiahnuť</a>
             </p>
           ) : (
             <p role="status">Používate najnovšiu verziu.</p>

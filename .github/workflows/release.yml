@@ -1,0 +1,40 @@
+# Pri značke v* (napr. v0.2.0) zostaví Windows inštalátor (.exe) a nahrá ho do GitHub Releases.
+# Appka sa pri štarte (s povolením) pozrie na posledné vydanie a ponúkne stiahnutie novej verzie.
+name: Vydanie pre Windows
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - run: npm test
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "Daňová kalkulačka ${{ github.ref_name }}"
+          releaseBody: |
+            Nová verzia Daňovej kalkulačky.
+
+            **Inštalácia / aktualizácia:** stiahnite súbor `.exe` nižšie a spustite ho. Nová verzia sa nainštaluje cez starú, uložené výpočty zostanú.
+            Ak Windows zobrazí „Systém Windows ochránil váš počítač“, kliknite na **Ďalšie informácie → Spustiť aj tak**.
+          releaseDraft: false
+          prerelease: false

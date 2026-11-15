@@ -405,3 +405,9 @@ ul.params { margin: 6px 0 0; padding-left: 18px; }
   .app[data-profile="zamestnanec"] { --accent: #f2c23b; --accent-text: #1a1400; --info-bg: #3a3115; }
   .app[data-profile="oboje"] { --accent: #5fcf86; --accent-text: #06200f; --info-bg: #173a24; }
 }
+
+/* mesačné príjmy priamo v Základných údajoch (12 polí v mriežke) */
+.month-inputs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 10px; margin: 8px 0 4px; }
+.month-inputs .field { margin: 0; }
+.month-inputs label { font-size: 0.85rem; text-transform: capitalize; }
+@media (max-width: 520px) { .month-inputs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
