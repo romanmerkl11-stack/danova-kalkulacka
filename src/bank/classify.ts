@@ -22,7 +22,11 @@ const LOAN = /\buver|pozicka|\bloan\b/;
 export interface ClassifyOptions {
   /** IBAN majiteľa výpisu (ak je známy), na rozpoznanie prevodov medzi vlastnými účtami */
   ownIban?: string;
+  /** meno majiteľa účtu – prichádzajúca platba od neho samého je prevod, nie príjem */
+  ownerName?: string;
 }
+
+const nameKey = (s: string) => norm(s).split(/[^a-z0-9]+/).filter(Boolean).sort().join(" ");
 
 function ruleMatches(r: BankRule, t: Tx): string | null {
   const m = r.match;
@@ -65,6 +69,7 @@ function one(t: Tx, rules: BankRule[], opts: ClassifyOptions): { category: Categ
   }
 
   if (opts.ownIban && iban && iban === cleanIban(opts.ownIban)) return { category: "ine", reason: "Prevod z vlastného účtu (rovnaký IBAN)" };
+  if (opts.ownerName && t.counterparty && nameKey(t.counterparty) === nameKey(opts.ownerName)) return { category: "ine", reason: "Platba od majiteľa účtu – pravdepodobne prevod z vlastného účtu" };
   if (OWN_DESC.test(both)) return { category: "ine", reason: "Pravdepodobne prevod medzi vlastnými účtami" };
   if (REFUND.test(both)) return { category: "ine", reason: "Pravdepodobne vrátenie platby" };
   if (INTEREST.test(both)) return { category: "ine", reason: "Pravdepodobne úrok z účtu" };

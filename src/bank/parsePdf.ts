@@ -6,7 +6,12 @@ import { extractSymbols, findDate, findIban, newId, parseAmount, parseDate } fro
 export interface TextItem {
   x: number;
   str: string;
+  /** šírka a veľkosť písma (ak sú známe) – na rozhodnutie, či medzi položkami je medzera */
+  w?: number;
+  h?: number;
 }
+
+export type RawItem = { x: number; y: number; str: string; w?: number; h?: number };
 
 export interface TextLine {
   page: number;
@@ -28,10 +33,10 @@ export async function extractPdfLines(bytes: Uint8Array): Promise<TextLine[]> {
     for (let p = 1; p <= doc.numPages; p++) {
       const page = await doc.getPage(p);
       const content = await page.getTextContent();
-      const raw: { x: number; y: number; str: string }[] = [];
+      const raw: RawItem[] = [];
       for (const it of content.items) {
         if (!("str" in it) || it.str.trim() === "") continue;
-        raw.push({ x: it.transform[4], y: it.transform[5], str: it.str });
+        raw.push({ x: it.transform[4], y: it.transform[5], str: it.str, w: it.width, h: Math.hypot(it.transform[2], it.transform[3]) || it.height });
       }
       lines.push(...groupItems(raw, p));
     }
@@ -42,18 +47,42 @@ export async function extractPdfLines(bytes: Uint8Array): Promise<TextLine[]> {
 }
 
 /** Zoskupí položky do riadkov podľa y (tolerancia 2.5 jednotky), v riadku podľa x. Čistá funkcia. */
-export function groupItems(items: { x: number; y: number; str: string }[], page: number, tol = 2.5): TextLine[] {
+export function groupItems(items: RawItem[], page: number, tol = 2.5): TextLine[] {
   const sorted = [...items].sort((a, b) => b.y - a.y || a.x - b.x);
   const groups: { y: number; items: TextItem[] }[] = [];
   for (const it of sorted) {
     const g = groups.find((gr) => Math.abs(gr.y - it.y) <= tol);
-    if (g) g.items.push({ x: it.x, str: it.str });
-    else groups.push({ y: it.y, items: [{ x: it.x, str: it.str }] });
+    const item: TextItem = { x: it.x, str: it.str, w: it.w, h: it.h };
+    if (g) g.items.push(item);
+    else groups.push({ y: it.y, items: [item] });
   }
   return groups.map((g) => {
     g.items.sort((a, b) => a.x - b.x);
-    return { page, y: g.y, items: g.items, text: g.items.map((i) => i.str.trim()).join(" ").replace(/\s{2,}/g, " ").trim() };
+    return { page, y: g.y, items: g.items, text: joinItems(g.items) };
   });
+}
+
+/** Spojí položky riadka. Medzeru vloží len tam, kde je medzi nimi viditeľná medzera
+ *  (pdfjs inak rozdelí slová s diakritikou na kúsky: „Okam ž it á“). Bez šírok vždy medzera. */
+export function joinItems(items: TextItem[]): string {
+  let out = "";
+  let prevEnd: number | null = null;
+  for (const i of items) {
+    const s = i.str;
+    if (!s.trim()) {
+      if (out && !out.endsWith(" ")) out += " ";
+      prevEnd = i.w !== undefined ? i.x + i.w : null;
+      continue;
+    }
+    if (out && !out.endsWith(" ")) {
+      const gap = prevEnd !== null && i.w !== undefined ? i.x - prevEnd : null;
+      const fs = i.h && i.h > 0 ? i.h : 8;
+      if (gap === null || gap > fs * 0.18) out += " ";
+    }
+    out += s;
+    prevEnd = i.w !== undefined ? i.x + i.w : null;
+  }
+  return out.replace(/\s{2,}/g, " ").trim();
 }
 
 // ---------- parsovanie riadkov ----------
@@ -63,6 +92,9 @@ export interface PdfParseResult {
   warnings: string[];
   /** rozsah rokov nájdených vo výpise */
   yearRange?: { from: number; to: number };
+  /** IBAN a meno majiteľa účtu z hlavičky výpisu (na rozpoznanie prevodov medzi vlastnými účtami) */
+  ownIban?: string;
+  ownerName?: string;
 }
 
 const SKIP = /po[cč]iato[cč]n[ýy]\s+zostatok|kone[cč]n[ýy]\s+zostatok|zostatok\s+(?:na|k)\b|\bspolu\b|\bobrat|\bs[úu][cč]et\b|celkom|opening balance|closing balance|\btotal\b|strana\s+\d|page\s+\d|\bobdobie\b|v[ýy]pis\s+(?:[cč]\.|[cč][ií]slo|z\s+[úu][cč]tu)|vyhotoven|vygenerovan/i;
@@ -71,8 +103,18 @@ const HEADER_BALANCE = /zostatok|balance/i;
 
 const MONEY = /(?<![\d.,])[-+−–]?\s?(?:\d{1,3}(?:[   ]\d{3})+|\d+)[.,]\d{2}(?!\d)-?/g;
 const DEBIT_WORDS = /debet|odp[ií]san|v[ýy]davok|v[ýy]daj|odch[aá]dz|platba kartou|trval[ýy] pr[ií]kaz|poplatok|inkaso|\bDR\b/i;
-const CREDIT_WORDS = /kredit|prijat[aáyý]|prip[ií]san|pr[ií]jem|prich[aá]dz|\bCR\b/i;
-const LABEL = /^(?:n[áa]zov\s+(?:[úu][cč]tu\s+)?protistrany|n[áa]zov\s+[úu][cč]tu|protistrana|pr[íi]jemca|odosielate[ľl]|platite[ľl]|partner|meno)\s*:\s*/i;
+const CREDIT_WORDS = /kredit|\bvklad|prijat[aáyý]|prip[ií]san|pr[ií]jem|prich[aá]dz|\bCR\b/i;
+const LABEL = /^(?:n[áa]zov\s+proti[úu][cč]tu|n[áa]zov\s+(?:[úu][cč]tu\s+)?protistrany|n[áa]zov\s+[úu][cč]tu|protistrana|pr[íi]jemca|odosielate[ľl]|platite[ľl]|partner|meno)\s*:\s*/i;
+
+/** začiatok sekcie s transakciami, ktoré neprešli – tie sa nezapočítavajú */
+const STOP = /nezrealizovan|neuskuto[cč]nen|odmietnut[ée]\s+(?:platby|transakcie)|zamietnut[ée]\s+(?:platby|transakcie)/i;
+/** päta strany banky – riadok ignorovať */
+const FOOTER = /@|www\.|klientske centrum|^M\d{3}_v\d+/i;
+
+/** „07.01.202507.01.2025 …“ (dátum valuty + dátum zaúčtovania bez medzery) → oddelí ich; použije sa dátum zaúčtovania. */
+export function splitJoinedDates(line: string): string {
+  return line.replace(/^(\d{1,2}\.\d{1,2}\.\d{4})(\d{1,2}\.\d{1,2}\.\d{4})/, "$2 $1");
+}
 
 interface Pending {
   head: string;
@@ -121,8 +163,22 @@ export function parseStatement(lines: string[]): PdfParseResult {
   const yearRange = ys.length ? { from: ys[0], to: ys[ys.length - 1] } : undefined;
   const defaultYear = ys.length ? [...years.entries()].sort((a, b) => b[1] - a[1])[0][0] : undefined;
 
+  // hlavička: IBAN a meno majiteľa
+  let ownIban: string | undefined;
+  let ownerName: string | undefined;
+  for (const l of lines.slice(0, 40)) {
+    const ib = /(?:[cč][ií]slo\s+[úu][cč]tu|IBAN)\s*:?\s*([A-Z]{2}\d{2}(?:\s?[0-9A-Z]{4}){4,7})/i.exec(l);
+    if (ib && !ownIban) ownIban = ib[1].replace(/\s/g, "");
+    const nm = /n[áa]zov\s+[úu][cč]tu\s*:?\s*(.+?)(?:\s{2,}|\s+[ÚU][cč]tovn|\s+Obdobie|$)/i.exec(l);
+    if (nm && !ownerName && !/proti/i.test(l)) ownerName = nm[1].trim();
+  }
+  // výpis s explicitným mínusom pri výdavkoch → suma bez znamienka je príjem
+  const signed = lines.some((l) => /^\d{1,2}\.\d{1,2}\.\d{4}/.test(l) && /(?:^|\s)[-−–]\s?\d[\d\s]*[.,]\d{2}\s*$/.test(l));
+
   let balanceCol = false;
   let cur: Pending | null = null;
+  let stopped = false;
+  const unrealized: string[] = [];
 
   const flush = () => {
     if (!cur) return;
@@ -147,6 +203,7 @@ export function parseStatement(lines: string[]): PdfParseResult {
       if (d && !c) sign = -1;
       else if (c && !d) sign = 1;
     }
+    if (!sign && signed) sign = 1;
     if (!sign) {
       warnings.push(`Nepodarilo sa určiť, či ide o príjem alebo výdavok: „${trunc(p.head)}“`);
       return;
@@ -164,7 +221,9 @@ export function parseStatement(lines: string[]): PdfParseResult {
     const contLines = p.cont
       .map((c) => c.trim())
       .filter((c) => c && !/^[-+−]?\s*[\d\s.,]+\s*(EUR|€)?$/i.test(c) && !/^(?:IBAN\s*:?\s*)?[A-Z]{2}\d{2}[\d A-Z]{11,}$/.test(c) && !/^((VS|KS|SS)\s*[:=/]?\s*\d+\s*[/,;]?\s*)+$/i.test(c));
-    const labelled = contLines.map((c) => c.replace(LABEL, ""));
+    const labelLine = contLines.find((c) => LABEL.test(c) && !/^n[áa]zov\s+[úu][cč]tu\s*:?\s*$/i.test(c));
+    const others = contLines.filter((c) => c !== labelLine && !/^[A-Z]{2}\d{2}(?:\s?[0-9A-Z]{4}){3,7}/.test(c) && !FOOTER.test(c));
+    const labelled = labelLine ? [labelLine.replace(LABEL, ""), ...others] : others;
     const counterparty = labelled[0] ?? (rest || undefined);
     const description = [rest, ...labelled.slice(counterparty === labelled[0] ? 1 : 0)].filter(Boolean).join(" ").trim() || undefined;
     const sym = extractSymbols(all);
@@ -183,7 +242,22 @@ export function parseStatement(lines: string[]): PdfParseResult {
     });
   };
 
-  for (const line of lines.map((l) => l.trim()).filter(Boolean)) {
+  for (const line of lines.map((l) => splitJoinedDates(l.trim())).filter(Boolean)) {
+    if (stopped) {
+      if (FOOTER.test(line) || SKIP.test(line) || /^v[áa][žz]en[áa]/i.test(line)) {
+        stopped = !/strana|v[áa][žz]en[áa]/i.test(line) ? stopped : false;
+        if (!stopped) break;
+        continue;
+      }
+      unrealized.push(line);
+      continue;
+    }
+    if (STOP.test(line)) {
+      flush();
+      stopped = true;
+      continue;
+    }
+    if (FOOTER.test(line)) continue;
     if (HEADER_AMOUNT.test(line) && HEADER_BALANCE.test(line) && !lineDate(line, defaultYear)) balanceCol = true;
     const date = lineDate(line, defaultYear);
     if (SKIP.test(line)) {
@@ -209,7 +283,10 @@ export function parseStatement(lines: string[]): PdfParseResult {
     p.cont.push(line);
   }
   flush();
-  return { txs, warnings, yearRange };
+  if (unrealized.length) {
+    warnings.push(`Výpis obsahuje nezrealizované transakcie (neprešli, preto sa nezapočítali): ${trunc(unrealized.join(" · "), 300)}`);
+  }
+  return { txs, warnings, yearRange, ownIban, ownerName };
 }
 
 /** posledný peňažný token; ak výpis má stĺpec zostatku a riadok má viac čísel, predposledný */
@@ -219,7 +296,7 @@ function pickAmount(toks: string[], balanceCol: boolean): string | undefined {
   return toks[toks.length - 1];
 }
 
-const trunc = (s: string) => (s.length > 90 ? s.slice(0, 90) + "…" : s);
+const trunc = (s: string, n = 90) => (s.length > n ? s.slice(0, n) + "…" : s);
 
 /** Zjednodušené API: len transakcie. */
 export const parseStatementLines = (lines: string[]): Tx[] => parseStatement(lines).txs;

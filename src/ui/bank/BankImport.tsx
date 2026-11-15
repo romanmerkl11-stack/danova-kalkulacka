@@ -23,6 +23,7 @@ export interface BankImportProps {
 export function BankImport({ input, rules, onRulesChange, onApply, onClose, openFile }: BankImportProps) {
   const [txs, setTxs] = useState<Tx[]>([]);
   const [ownIban, setOwnIban] = useState<string | undefined>();
+  const [ownerName, setOwnerName] = useState<string | undefined>();
   const [files, setFiles] = useState<string[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [info, setInfo] = useState<string | null>(null);
@@ -33,8 +34,8 @@ export function BankImport({ input, rules, onRulesChange, onApply, onClose, open
   const [opts, setOpts] = useState<ApplyOpts>({ income: true, sp: true, zp: true });
 
   const classified: ClassifiedTx[] = useMemo(
-    () => classify(txs, rules, { ownIban }).map((t) => (overrides[t.id] ? { ...t, category: overrides[t.id], reason: "Ručne zmenené" } : t)),
-    [txs, rules, ownIban, overrides],
+    () => classify(txs, rules, { ownIban, ownerName }).map((t) => (overrides[t.id] ? { ...t, category: overrides[t.id], reason: "Ručne zmenené" } : t)),
+    [txs, rules, ownIban, ownerName, overrides],
   );
   const agg = useMemo(() => aggregate(classified, input.year), [classified, input.year]);
   const touched = useMemo(() => new Set(Object.keys(overrides)), [overrides]);
@@ -57,6 +58,7 @@ export function BankImport({ input, rules, onRulesChange, onApply, onClose, open
       const res = await loadStatement(f.name, f.bytes);
       if (res.error) return setError(res.error);
       if (res.ownIban) setOwnIban(res.ownIban);
+      if (res.ownerName) setOwnerName(res.ownerName);
       if (res.table && !res.table.confident) return setPending({ name: f.name, table: res.table });
       addTxs(f.name, res.txs, res.warnings);
     } finally {

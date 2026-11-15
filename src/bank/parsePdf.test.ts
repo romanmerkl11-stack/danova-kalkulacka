@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { groupItems, parseStatement, parseStatementLines } from "./parsePdf";
+import { groupItems, joinItems, parseStatement, parseStatementLines } from "./parsePdf";
+import { classify } from "./classify";
 
 const SAMPLE = [
   "Banka XY, a.s.",
@@ -53,5 +54,74 @@ describe("groupItems", () => {
   it("zoskupí podľa y a zoradí podľa x", () => {
     const l = groupItems([{ x: 200, y: 700, str: "B" }, { x: 10, y: 701, str: "A" }, { x: 10, y: 650, str: "C" }], 1);
     expect(l.map((x) => x.text)).toEqual(["A B", "C"]);
+  });
+});
+
+describe("PDF výpis vo formáte Slovenskej sporiteľne (anonymizované)", () => {
+  const lines = [
+    "č. 1/2025 - Strana 1/2",
+    "Výpis z účtu: Podnikateľský účet",
+    "Názov účtu Ján Testovací Účtovné obdobie 01. 01. 2025 - 31. 12. 2025",
+    "Číslo účtu SK00 0900 0000 0000 1111 2222 Počiatočný stav účtu 100,00",
+    "Dátum Dátum Popis Suma Suma",
+    "valuty zúčtovania transakcie transakcie poplatku",
+    "07.01.202507.01.2025 Okamžitá platba trvalým príkazom - 97,80",
+    "SK00 8180 0000 0070 0000 0001 BIC: SPSRSKBA",
+    "Názov protiúčtu: Dovera",
+    "VS: 1111111111 KS: 3558",
+    "07.01.202507.01.2025 Okamžitá platba trvalým príkazom - 216,13",
+    "SK00 8180 0000 0070 0000 0002 BIC: SPSRSKBA",
+    "Názov protiúčtu: Socialna poistovna",
+    "VS: 2222222222 SS: 88 KS: 3118",
+    "28.01.202528.01.2025 Bezhotovostný vklad 1 850,00",
+    "SK00 7500 0000 0000 0000 0003 BIC: CEKOSKBX",
+    "Názov protiúčtu: ODBERATEĽ S.R.O.",
+    "02.02.202503.02.2025 Bezhotovostný vklad-okamžitá platba 150,00",
+    "SK00 1100 0000 0000 0000 0004 BIC: TATRSKBX",
+    "Názov protiúčtu: Testovací Ján",
+    "31.01.202531.01.2025 Poplatok za vedenie účtu - 7,00",
+    "info@banka.sk Klientske centrum: 0800 000 000 www.banka.sk",
+    "Nezrealizované transakcie:",
+    "07.06.202511.06.2025 Trvalý Platobný príkaz na úhradu",
+    "Názov protiúčtu: Socialna poistovna",
+    "237,02 EUR",
+    "Nedostatočné krytie na účte",
+    "č. 1/2025 - Strana 2/2",
+    "Vážená Klientka, vážený Klient,",
+  ];
+  const r = parseStatement(lines);
+
+  it("načíta pohyby so zlepenými dátumami a mínusom s medzerou", () => {
+    expect(r.txs.map((t) => [t.date, t.amount])).toEqual([
+      ["2025-01-07", -97.8],
+      ["2025-01-07", -216.13],
+      ["2025-01-28", 1850],
+      ["2025-02-03", 150],
+      ["2025-01-31", -7],
+    ]);
+    expect(r.txs[1].counterparty).toBe("Socialna poistovna");
+    expect(r.txs[1].vs).toBe("2222222222");
+  });
+  it("zistí majiteľa účtu a nezrealizované transakcie nezapočíta (len varovanie)", () => {
+    expect(r.ownIban).toBe("SK0009000000000011112222");
+    expect(r.ownerName).toBe("Ján Testovací");
+    expect(r.warnings.some((w) => w.includes("nezrealizované") && w.includes("237,02"))).toBe(true);
+  });
+  it("platba od majiteľa účtu nie je príjem", () => {
+    const c = classify(r.txs, [], { ownIban: r.ownIban, ownerName: r.ownerName });
+    expect(c.map((t) => t.category)).toEqual(["zp", "sp", "prijem", "ine", "ine"]);
+  });
+});
+
+describe("joinItems", () => {
+  it("nevkladá medzery do slov rozdelených pdfjs, medzi slovami áno", () => {
+    expect(
+      joinItems([
+        { x: 0, str: "Okam", w: 20, h: 8 },
+        { x: 20.2, str: "ž", w: 4, h: 8 },
+        { x: 24.1, str: "itá", w: 10, h: 8 },
+        { x: 36.5, str: "platba", w: 25, h: 8 },
+      ]),
+    ).toBe("Okamžitá platba");
   });
 });

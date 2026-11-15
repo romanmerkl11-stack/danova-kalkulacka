@@ -8,6 +8,7 @@ export interface LoadResult {
   txs: Tx[];
   warnings: string[];
   ownIban?: string;
+  ownerName?: string;
   /** pri tabuľke s nejasnými stĺpcami: dáta na ručné mapovanie */
   table?: TableParseResult;
   /** fatálna chyba (nepodporovaný formát…) */
@@ -22,7 +23,7 @@ export async function loadStatement(name: string, bytes: Uint8Array): Promise<Lo
     if (ext === "xls") return { txs: [], warnings: [], error: "Starý formát .xls nie je podporovaný – uložte ako .xlsx alebo CSV." };
     if (ext === "pdf") {
       const r = await parsePdfBytes(bytes);
-      return { txs: r.txs, warnings: r.warnings };
+      return { txs: r.txs, warnings: r.warnings, ownIban: r.ownIban, ownerName: r.ownerName };
     }
     if (ext === "xml") {
       const r = parseCamtBytes(bytes);
