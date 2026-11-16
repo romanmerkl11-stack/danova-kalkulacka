@@ -229,3 +229,18 @@ export function staircase(xs: number[], near: number): number[] {
   for (let i = xs.length - 2; i >= 0; i--) out[i] = xs[i + 1] - xs[i] < near ? out[i + 1] + 1 : 0;
   return out;
 }
+
+/**
+ * Značky limitov na posuvníku v predvolenom zobrazení: posledný prekročený a dva najbližšie nad príjmom
+ * (ostatné sa ukážu až po „Zobraziť všetky limity“). Poradie zostáva podľa sumy.
+ */
+export function nearestTicks<T extends { limit: number }>(ticks: T[], income: number, ahead = 2): T[] {
+  const sorted = [...ticks].sort((a, b) => a.limit - b.limit);
+  const firstAhead = sorted.findIndex((t) => t.limit >= income);
+  const start = firstAhead === -1 ? sorted.length - 1 : Math.max(0, firstAhead - 1);
+  const end = firstAhead === -1 ? sorted.length : firstAhead + ahead;
+  return sorted.slice(start, end);
+}
+
+/** Limity, ktoré si po prekročení vyžadujú pozornosť (žlté); ostatné sú bežné povinnosti (neutrálne). */
+export const ATTENTION_LIMITS = new Set(["pausalCap", "dph", "dphImmediate"]);

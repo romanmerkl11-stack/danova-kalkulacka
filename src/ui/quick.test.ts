@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { calculate, defaultInput } from "../engine/calc";
-import { buildQuickInput, incomeLimits, sliderMax, toDetailedInput, transferReport } from "./quick";
+import { buildQuickInput, incomeLimits, sliderMax, toDetailedInput, transferReport, nearestTicks } from "./quick";
 
 describe("rýchly výpočet", () => {
   it("automatické výdavky: bez prepisu", () => {
@@ -152,5 +152,16 @@ describe("F09 – čo prenos do podrobného výpočtu prepíše a čo zostane", 
       "nezdaniteľná časť na manžela/manželku",
       "zaplatené preddavky na daň",
     ]);
+  });
+});
+
+describe("U06 – najbližšie značky limitov", () => {
+  const t = [10, 20, 30, 40, 50].map((limit) => ({ limit }));
+  it("posledný prekročený + dva nad príjmom", () => {
+    expect(nearestTicks(t, 25).map((x) => x.limit)).toEqual([20, 30, 40]);
+    expect(nearestTicks(t, 0).map((x) => x.limit)).toEqual([10, 20]);
+    expect(nearestTicks(t, 45).map((x) => x.limit)).toEqual([40, 50]);
+    expect(nearestTicks(t, 99).map((x) => x.limit)).toEqual([50]);
+    expect(nearestTicks([], 5)).toEqual([]);
   });
 });

@@ -84,108 +84,7 @@ export function SettingsTab({ data, setData, onReplaceData }: Props) {
   return (
     <main className="page wide">
       <section className="card">
-        <h2>Sieť</h2>
-        <label className="check">
-          <input type="checkbox" checked={s.offline} onChange={(e) => set("offline", e.target.checked)} />
-          Úplne offline – appka nikdy nejde na internet
-        </label>
-        <label className="check">
-          <input type="checkbox" checked={s.neverAsk} disabled={s.offline} onChange={(e) => set("neverAsk", e.target.checked)} />
-          Nepýtať sa – rovno ísť na internet
-        </label>
-        <h3>Zdroje povolené natrvalo</h3>
-        {(Object.keys(SOURCE_LABELS) as SourceId[]).map((src) => (
-          <label key={src} className="check">
-            <input type="checkbox" checked={!!s.alwaysAllow[src]} onChange={(e) => setAllow(src, e.target.checked)} />
-            {SOURCE_LABELS[src]} – vždy povoliť
-          </label>
-        ))}
-        <h3>Kontroly pri štarte</h3>
-        <label className="check">
-          <input type="checkbox" checked={s.checkParamsOnStart} onChange={(e) => set("checkParamsOnStart", e.target.checked)} />
-          Pri štarte skontrolovať nové sadzby
-        </label>
-        <label className="check">
-          <input type="checkbox" checked={s.checkUpdatesOnStart} onChange={(e) => set("checkUpdatesOnStart", e.target.checked)} />
-          Pri štarte skontrolovať novú verziu aplikácie
-        </label>
-        <p className="note small">Kontroly pri štarte sa riadia aj ostatnými povoleniami – bez povolenia sa appka spýta.</p>
-        <div className="field">
-          <label htmlFor="params-url">Adresa súboru so sadzbami</label>
-          <input id="params-url" type="text" value={s.paramsUrl} onChange={(e) => set("paramsUrl", e.target.value)} />
-        </div>
-        <div className="field">
-          <label htmlFor="update-repo">Repozitár aplikácie na GitHube (vlastník/repozitár)</label>
-          <input id="update-repo" type="text" value={s.updateRepo} onChange={(e) => set("updateRepo", e.target.value)} />
-        </div>
-      </section>
-
-      <section className="card">
-        <h2>Záložka Výpočet – karty</h2>
-        <p className="note small">Zvoľte, ktoré karty sa zobrazia v pravom stĺpci záložky Výpočet, a ich poradie.</p>
-        <ul className="layout-list">
-          {layout.map((l, i) => {
-            const name = cardDef(l.id)?.title ?? l.id;
-            return (
-              <li key={l.id} className="layout-row">
-                <label className="check">
-                  <input type="checkbox" checked={l.visible} onChange={(e) => setLayout(layout.map((x) => (x.id === l.id ? { ...x, visible: e.target.checked } : x)))} />
-                  {name}
-                </label>
-                <span className="row">
-                  <button type="button" className="ghost icon" aria-label={`Posunúť vyššie – ${name}`} disabled={i === 0} onClick={() => move(i, -1)}>↑</button>
-                  <button type="button" className="ghost icon" aria-label={`Posunúť nižšie – ${name}`} disabled={i === layout.length - 1} onClick={() => move(i, 1)}>↓</button>
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-        <div className="row">
-          <button type="button" className="ghost" onClick={() => set("calcLayout", undefined)}>Obnoviť predvolené</button>
-        </div>
-      </section>
-
-      <section className="card">
-        <h2>Log prístupov na internet</h2>
-        {log.length === 0 ? (
-          <p className="note">Appka zatiaľ nešla na internet.</p>
-        ) : (
-          <>
-            <div className="table-wrap">
-              <table className="months netlog">
-                <thead>
-                  <tr>
-                    <th scope="col">Dátum a čas</th>
-                    <th scope="col">Zdroj</th>
-                    <th scope="col">Adresa</th>
-                    <th scope="col">Čo sa odoslalo</th>
-                    <th scope="col">Výsledok</th>
-                    <th scope="col">Detail</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {log.map((e, i) => (
-                    <tr key={`${e.at}-${i}`}>
-                      <td>{skDateTime(e.at)}</td>
-                      <td style={{ whiteSpace: "normal" }}>{SOURCE_LABELS[e.source] ?? e.source}</td>
-                      <td className="mono wrap" style={{ whiteSpace: "normal" }}>{e.url}</td>
-                      <td style={{ whiteSpace: "normal" }}>{e.sent}</td>
-                      <td>{RESULT_LABEL[e.result] ?? e.result}</td>
-                      <td style={{ whiteSpace: "normal" }}>{e.detail ?? ""}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="row" style={{ marginTop: 12 }}>
-              <button type="button" className="danger-btn" onClick={clearLog}>Vymazať log</button>
-            </div>
-          </>
-        )}
-      </section>
-
-      <section className="card">
-        <h2>Záloha</h2>
+        <h2>Dáta a zálohy</h2>
         <p className="note">
           Vaše dáta (výpočty, firmy, nastavenia) sú uložené {isTauri() ? "v priečinku aplikácie (AppData\\Roaming\\sk.danovakalkulacka\\data.json)" : "v úložisku prehliadača"}.
         </p>
@@ -236,12 +135,42 @@ export function SettingsTab({ data, setData, onReplaceData }: Props) {
       </section>
 
       <section className="card">
+        <h2>Internet a súkromie</h2>
+        <p className="note small">Appka ide na internet len pri vyhľadaní firmy, kontrole sadzieb a kontrole novej verzie – vždy podľa nastavení nižšie. Vaše daňové výpočty sa nikam neodosielajú; server dostane len samotnú požiadavku (pri vyhľadaní firmy hľadané IČO alebo názov) a bežné sieťové údaje.</p>
+        <label className="check">
+          <input type="checkbox" checked={s.offline} onChange={(e) => set("offline", e.target.checked)} />
+          Úplne offline – appka nikdy nejde na internet
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={s.neverAsk} disabled={s.offline} onChange={(e) => set("neverAsk", e.target.checked)} />
+          Nepýtať sa – rovno ísť na internet
+        </label>
+        <h3>Zdroje povolené natrvalo</h3>
+        {(Object.keys(SOURCE_LABELS) as SourceId[]).map((src) => (
+          <label key={src} className="check">
+            <input type="checkbox" checked={!!s.alwaysAllow[src]} onChange={(e) => setAllow(src, e.target.checked)} />
+            {SOURCE_LABELS[src]} – vždy povoliť
+          </label>
+        ))}
+        <h3>Kontroly pri štarte</h3>
+        <label className="check">
+          <input type="checkbox" checked={s.checkParamsOnStart} onChange={(e) => set("checkParamsOnStart", e.target.checked)} />
+          Pri štarte skontrolovať nové sadzby
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={s.checkUpdatesOnStart} onChange={(e) => set("checkUpdatesOnStart", e.target.checked)} />
+          Pri štarte skontrolovať novú verziu aplikácie
+        </label>
+        <p className="note small">Kontroly pri štarte sa riadia aj ostatnými povoleniami – bez povolenia sa appka spýta.</p>
+      </section>
+
+      <section className="card">
         <h2>Aktualizácia aplikácie</h2>
         <p className="note">Nainštalovaná verzia: {APP_VERSION}</p>
         <div className="row">
           <button type="button" onClick={checkUpdate} disabled={repoUnset || upd.busy}>{upd.busy ? "Kontrolujem…" : "Skontrolovať novú verziu"}</button>
         </div>
-        {repoUnset && <p className="note small warn-text">Repozitár aplikácie ešte nie je nastavený (Nastavenia).</p>}
+        {repoUnset && <p className="note small warn-text">Repozitár aplikácie ešte nie je nastavený (Nastavenia → Pokročilé a diagnostika).</p>}
         {upd.msg && <p className="note warn-text" role="alert">{upd.msg}</p>}
         {upd.checked &&
           (upd.release && isNewerVersion(upd.release.version, APP_VERSION) ? (
@@ -252,6 +181,83 @@ export function SettingsTab({ data, setData, onReplaceData }: Props) {
           ) : (
             <p role="status">Používate najnovšiu verziu.</p>
           ))}
+      </section>
+      <section className="card">
+        <h2>Karty na záložke Výpočet</h2>
+        <p className="note small">Zvoľte, ktoré karty sa zobrazia v pravom stĺpci záložky Výpočet, a ich poradie.</p>
+        <ul className="layout-list">
+          {layout.map((l, i) => {
+            const name = cardDef(l.id)?.title ?? l.id;
+            return (
+              <li key={l.id} className="layout-row">
+                <label className="check">
+                  <input type="checkbox" checked={l.visible} onChange={(e) => setLayout(layout.map((x) => (x.id === l.id ? { ...x, visible: e.target.checked } : x)))} />
+                  {name}
+                </label>
+                <span className="row">
+                  <button type="button" className="ghost icon" aria-label={`Posunúť vyššie – ${name}`} disabled={i === 0} onClick={() => move(i, -1)}>↑</button>
+                  <button type="button" className="ghost icon" aria-label={`Posunúť nižšie – ${name}`} disabled={i === layout.length - 1} onClick={() => move(i, 1)}>↓</button>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="row">
+          <button type="button" className="ghost" onClick={() => set("calcLayout", undefined)}>Obnoviť predvolené</button>
+        </div>
+      </section>
+
+      <section className="card">
+        <details className="advanced">
+          <summary><h2>Pokročilé a diagnostika</h2></summary>
+          <p className="note small">Technické nastavenia – bežne ich netreba meniť.</p>
+        <div className="field">
+          <label htmlFor="params-url">Adresa súboru so sadzbami</label>
+          <input id="params-url" type="text" value={s.paramsUrl} onChange={(e) => set("paramsUrl", e.target.value)} />
+        </div>
+        <div className="field">
+          <label htmlFor="update-repo">Repozitár aplikácie na GitHube (vlastník/repozitár)</label>
+          <input id="update-repo" type="text" value={s.updateRepo} onChange={(e) => set("updateRepo", e.target.value)} />
+        </div>
+
+        <h3>Log prístupov na internet</h3>
+        <p className="note small">Log môže obsahovať hľadané IČO alebo názov firmy a je súčasťou zálohy.</p>
+        {log.length === 0 ? (
+          <p className="note">Appka zatiaľ nešla na internet.</p>
+        ) : (
+          <>
+            <div className="table-wrap">
+              <table className="months netlog">
+                <thead>
+                  <tr>
+                    <th scope="col">Dátum a čas</th>
+                    <th scope="col">Zdroj</th>
+                    <th scope="col">Adresa</th>
+                    <th scope="col">Čo sa odoslalo</th>
+                    <th scope="col">Výsledok</th>
+                    <th scope="col">Detail</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {log.map((e, i) => (
+                    <tr key={`${e.at}-${i}`}>
+                      <td>{skDateTime(e.at)}</td>
+                      <td style={{ whiteSpace: "normal" }}>{SOURCE_LABELS[e.source] ?? e.source}</td>
+                      <td className="mono wrap" style={{ whiteSpace: "normal" }}>{e.url}</td>
+                      <td style={{ whiteSpace: "normal" }}>{e.sent}</td>
+                      <td>{RESULT_LABEL[e.result] ?? e.result}</td>
+                      <td style={{ whiteSpace: "normal" }}>{e.detail ?? ""}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="row" style={{ marginTop: 12 }}>
+              <button type="button" className="danger-btn" onClick={clearLog}>Vymazať log</button>
+            </div>
+          </>
+        )}
+        </details>
       </section>
     </main>
   );

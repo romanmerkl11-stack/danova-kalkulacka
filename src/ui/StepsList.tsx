@@ -109,8 +109,34 @@ interface Props {
 }
 
 export function StepsList({ result, input, update, readOnly, cardId = "card-steps", defaultOpen = true }: Props) {
+  // ručné prepisy sú pokročilá funkcia – ceruzky až po zapnutí
+  const [editMode, setEditMode] = useState(false);
+  const overridden = result.steps.filter((s) => s.overridden && input.overrides[s.id] !== undefined);
   return (
     <Card id={cardId} title="Postup výpočtu" defaultOpen={defaultOpen}>
+      {!readOnly && (
+        <div className="steps-tools">
+          {overridden.length > 0 && (
+            <span className="steps-overrides" role="status">
+              <span className="badge manual">ručne</span> Ručné prepisy: {overridden.length} ({overridden.map((s) => s.label).join(", ")}) ·{" "}
+              <button
+                type="button"
+                className="link-btn"
+                onClick={() =>
+                  update((d) => {
+                    for (const s of overridden) delete d.overrides[s.id];
+                  })
+                }
+              >
+                Obnoviť všetky
+              </button>
+            </span>
+          )}
+          <button type="button" className="link-btn" aria-pressed={editMode} onClick={() => setEditMode(!editMode)}>
+            {editMode ? "Hotovo – skryť úpravy" : "Upraviť medzivýsledky ručne"}
+          </button>
+        </div>
+      )}
       {GROUPS.map((g) => {
         const steps = result.steps.filter((s) => s.group === g.id);
         if (steps.length === 0) return null;
@@ -119,7 +145,7 @@ export function StepsList({ result, input, update, readOnly, cardId = "card-step
             <h3>{g.title}</h3>
             <ul className="steps">
               {steps.map((s) => (
-                <StepRow key={s.id} step={s} input={input} update={update} readOnly={readOnly} />
+                <StepRow key={s.id} step={s} input={input} update={update} readOnly={readOnly || !editMode} />
               ))}
             </ul>
           </div>

@@ -14,6 +14,24 @@ import { eur } from "../engine/money";
 import { formatSkNumber } from "./format";
 
 const fmt = (v: number | undefined) => (v === undefined ? "–" : eur(v));
+/** bez „€“ – pole má vlastnú príponu € */
+const num = (v: number | undefined) => (v === undefined ? "–" : formatSkNumber(v));
+
+/** Pôvod hodnoty pod poľom: automatika alebo vlastná suma (s návratom k automatike). */
+function AutoHint({ own, auto, onReset }: { own: boolean; auto: string; onReset: () => void }) {
+  return (
+    <p className="note small auto-hint">
+      {own ? (
+        <>
+          Vlastná suma ·{" "}
+          <button type="button" className="link-btn" onClick={onReset}>Obnoviť automatiku</button>
+        </>
+      ) : (
+        <>Automaticky: {auto}</>
+      )}
+    </p>
+  );
+}
 
 interface Props {
   input: CalcInput;
@@ -146,9 +164,10 @@ export function InputsPanel({ nickname, onNickname, input, update, replaceInput,
             label={`Sociálne poistenie január – jún ${input.year}`}
             value={input.insurance.spJanJun}
             allowNull
-            placeholder={`min. ${fmt(params[input.year]?.sp.minPoistne.value)}`}
+            placeholder={`min. ${num(params[input.year]?.sp.minPoistne.value)}`}
             onChange={(v) => update((d) => void (d.insurance.spJanJun = v))}
           />
+          <AutoHint own={input.insurance.spJanJun !== null} auto={`minimum ${fmt(params[input.year]?.sp.minPoistne.value)}`} onReset={() => update((d) => void (d.insurance.spJanJun = null))} />
           <NumberInput
             label={`Sociálne poistenie júl – december ${input.year}`}
             value={input.insurance.spJulDec}
@@ -156,13 +175,15 @@ export function InputsPanel({ nickname, onNickname, input, update, replaceInput,
             placeholder={`podľa DP za ${input.year - 1}`}
             onChange={(v) => update((d) => void (d.insurance.spJulDec = v))}
           />
+          <AutoHint own={input.insurance.spJulDec !== null} auto={`podľa daňového priznania za ${input.year - 1} (najmenej minimum)`} onReset={() => update((d) => void (d.insurance.spJulDec = null))} />
           <NumberInput
             label={`Zdravotné poistenie mesačne ${input.year}`}
             value={input.insurance.zpMonthlyAmount}
             allowNull
-            placeholder={`min. ${fmt(params[input.year]?.zp.minPreddavok.value)}`}
+            placeholder={`min. ${num(params[input.year]?.zp.minPreddavok.value)}`}
             onChange={(v) => update((d) => void (d.insurance.zpMonthlyAmount = v))}
           />
+          <AutoHint own={input.insurance.zpMonthlyAmount !== null} auto={`minimum ${fmt(params[input.year]?.zp.minPreddavok.value)}`} onReset={() => update((d) => void (d.insurance.zpMonthlyAmount = null))} />
         </fieldset>
         </>}
       </Card>

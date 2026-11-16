@@ -10,8 +10,9 @@ import { formatSkNumber } from "../format";
 import { StepsList } from "../StepsList";
 import { AssignNotice } from "../AssignNotice";
 import { filingHeadline } from "../FilingPanel";
+import { PROFILES } from "../ProfileSwitch";
 import { staircase } from "../quick";
-import { buildQuickInput, contributionLimits, contributionThresholds, incomeLimits, taxStartThreshold, SLIDER_STEP, sliderMax, toDetailedInput, transferReport, type TransferReport, withoutOwnContributions, type QuickState } from "../quick";
+import { buildQuickInput, contributionLimits, contributionThresholds, incomeLimits, taxStartThreshold, SLIDER_STEP, sliderMax, toDetailedInput, transferReport, nearestTicks, ATTENTION_LIMITS, type TransferReport, withoutOwnContributions, type QuickState } from "../quick";
 
 interface Props {
   quick: NonNullable<AppData["quick"]>;
@@ -36,6 +37,7 @@ const Stat = ({ label, value, sub, tone }: { label: string; value: string; sub?:
 
 export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed, onOpenDetailed }: Props) {
   const [transfer, setTransfer] = useState<TransferReport | null>(null);
+  const [allTicks, setAllTicks] = useState(false);
   // plynulé ťahanie slidera: výpočet beží s oneskorenou hodnotou
   const dq = useDeferredValue(quick);
 
@@ -93,7 +95,10 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed,
   const ownContrib = contribFields.some((f) => quick[f.key] != null);
   const max = sliderMax(auto.limits);
   const contrib = contributionLimits(thresholds, quick.income);
-  const ticks = [...incomeLimits(auto.limits), ...contrib].sort((x, y) => x.limit - y.limit);
+  const allLimitTicks = [...incomeLimits(auto.limits), ...contrib].sort((x, y) => x.limit - y.limit);
+  // predvolene len najbližšie limity – menej hustá stupnica (všetky na požiadanie)
+  const ticks = allTicks ? allLimitTicks : nearestTicks(allLimitTicks, quick.income);
+  const nextLimit = allLimitTicks.find((l) => l.limit >= quick.income);
   // schody: v hustej skupine prvý popisok najnižšie, ďalšie vyššie (šikmé texty sa tak nekrížia)
   const steps = staircase(ticks.map((l) => Math.min(1, l.limit / max) * sliderW), 70);
   const maxStep = Math.max(0, ...steps);
@@ -104,6 +109,11 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed,
   // „spMin“ z enginu je meraný na základe dane – na tejto obrazovke ho nahrádzajú hranice v príjmoch
   const exceeded = [...result.limits.filter((l) => l.exceeded && l.id !== "filing" && l.id !== "spMin"), ...contributionLimits(thresholds, result.summary.income).filter((l) => l.exceeded)];
   const income = Math.min(quick.income, max);
+  // bežné povinnosti (vznik dane, SP…) neutrálne, žlté len to, čo treba riešiť (DPH, strop paušálu)
+  const attention = exceeded.filter((l) => ATTENTION_LIMITS.has(l.id));
+  const normal = exceeded.filter((l) => !ATTENTION_LIMITS.has(l.id));
+  const yp = params[result.year];
+  const context = `Rok ${result.year} · ${PROFILES.find((p) => p.id === (quick.profile ?? "szco"))?.label ?? ""} · odhad${yp?.status === "predbežné" ? " (predbežné sadzby)" : ""}`;
   const profile = quick.profile ?? "szco";
   const emp = profile === "zamestnanec";
   const both = profile === "oboje";
@@ -159,6 +169,20 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed,
               })}
             </div>
           </div>
+          <div className="slider-foot small">
+            <span className="note">
+              {quick.income > max
+                ? "Príjem je nad rozsahom posuvníka – presná suma je v poli vyššie."
+                : nextLimit
+                  ? <>Najbližšie: <strong>{nextLimit.label}</strong> pri {eur(nextLimit.limit)} – zostáva {eur(nextLimit.limit - quick.income)}.</>
+                  : "Všetky sledované limity sú prekročené."}
+            </span>
+            {allLimitTicks.length > ticks.length || allTicks ? (
+              <button type="button" className="link-btn" aria-pressed={allTicks} onClick={() => setAllTicks(!allTicks)}>
+                {allTicks ? "Len najbližšie limity" : `Zobraziť všetky limity (${allLimitTicks.length})`}
+              </button>
+            ) : null}
+          </div>
         </section>
 
         {emp && (
@@ -193,7 +217,13 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed,
             placeholder={autoExpenses.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             onChange={(v) => set({ expenses: v === null ? null : Math.max(0, v) })}
           />
-          {quick.expenses !== null && <p className="note small">Vlastná suma (automaticky by bolo {eur(autoExpenses)}).</p>}
+          <p className="note small auto-hint">
+            {quick.expenses === null ? (
+              <>Automaticky: <strong>{eur(autoExpenses)}</strong> (paušál + zaplatené poistné)</>
+            ) : (
+              <>Vlastná suma · automaticky by bolo {eur(autoExpenses)}</>
+            )}
+          </p>
 
           <div className="quick-head quick-contrib-head">
             <h2>Odvody mesačne {quick.year}</h2>
@@ -213,6 +243,9 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed,
               />
             ))}
           </div>
+          <p className="note small auto-hint">
+            {ownContrib ? "Vlastné sumy – prázdne pole = automaticky." : "Automaticky (minimum alebo podľa daňového priznania) – sumy sú v poliach sivou. Ak platíte inak, prepíšte ich."}
+          </p>
           {both && (
             <div className="quick-emp-block">
               <div className="quick-head quick-contrib-head"><h2>Zamestnanie</h2></div>
@@ -228,16 +261,22 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed,
       </div>
 
       <section className="card" aria-label="Výsledok">
+        <p className="result-context small">{context}</p>
         {emp ? (
           <div className="stats">
-            <Stat label="Daň" value={eur(s.tax)} tone="main" />
-            <Stat label={refund ? "Preplatok" : "Nedoplatok"} value={eur(Math.abs(s.taxToPay))} sub={refund ? "vráti vám daňový úrad / zamestnávateľ" : "doplatíte pri daňovom priznaní"} tone={refund ? "good" : "main"} />
+            <Stat label={refund ? "Preplatok" : "Daň na úhradu"} value={eur(Math.abs(s.taxToPay))} sub={refund ? "vráti vám daňový úrad / zamestnávateľ" : "doplatíte pri daňovom priznaní"} tone={refund ? "good" : "main"} />
+            <Stat label={`Daň za rok ${result.year}`} value={eur(s.tax)} sub={`odpočítané (preddavky, bonus) ${eur(Math.max(0, s.tax - s.taxToPay))}`} />
             <Stat label="Daňové priznanie" value={f.type ? `typ ${f.type}` : "netreba"} sub={filingHeadline(result)} />
             <Stat label="Príjem po dani a odvodoch" value={eur(s.net)} sub={`${eur(s.netMonthly)} mesačne`} tone="good" />
           </div>
         ) : (
         <div className="stats">
-          <Stat label="Daň" value={eur(s.tax)} sub={Math.abs(s.taxToPay - s.tax) > 0.005 ? `${refund ? "Preplatok" : "Na úhradu"}: ${eur(Math.abs(s.taxToPay))}` : undefined} tone="main" />
+          <Stat
+            label={refund ? "Preplatok" : "Daň na úhradu"}
+            value={eur(Math.abs(s.taxToPay))}
+            sub={Math.abs(s.taxToPay - s.tax) > 0.005 ? `Daň za rok ${eur(s.tax)} · odpočítané (preddavky, bonus) ${eur(s.tax - s.taxToPay)}` : `daň za rok ${result.year}`}
+            tone={refund ? "good" : "main"}
+          />
           <Stat label={`Odvody za ${result.year}`} value={eur(s.sp + s.zp)} sub={`SP ${eur(s.sp)} · ZP ${eur(s.zp)}`} />
           <Stat
             label={`Nové odvody ${n.year} mesačne`}
@@ -262,14 +301,26 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed,
           )}
         </div>
         )}
+        <AssignNotice tax={result.summary.tax} year={result.year} />
       </section>
 
-      <AssignNotice tax={result.summary.tax} year={result.year} />
       <ResultNotices result={result} hideLimitWarnings />
 
-      {exceeded.length > 0 && (
+      {normal.length > 0 && (
+        <div className="box info quick-means" role="status">
+          <strong>Čo pre vás tento príjem znamená</strong>
+          <ul>
+            {normal.map((l) => (
+              <li key={l.id}>
+                <strong>{l.label}</strong> (od {eur(l.limit)}): {l.consequence}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {attention.length > 0 && (
         <div className="quick-warn">
-          {exceeded.map((l) => (
+          {attention.map((l) => (
             <div key={l.id} className="box warn" role="status">
               <strong>{l.label}</strong> – prekročené o {eur(l.current - l.limit)} (limit {eur(l.limit)}). {l.consequence}
             </div>

@@ -1,6 +1,5 @@
 import { ResultNotices } from "../ResultNotices";
 import { requestFeedback } from "../../feedback/FeedbackDialog";
-import { AssignNotice } from "../AssignNotice";
 import { openFile } from "../../store/storage";
 import type { ParamSet } from "../../params/types";
 import type { BankRule } from "../../bank/types";
@@ -186,7 +185,6 @@ export function CalcTab({ input, update, replaceInput, nickname, onNickname, cal
           openFile={openFile}
         />
       )}
-      {calc.result && <AssignNotice tax={calc.result.summary.tax} year={calc.result.year} />}
     </main>
   );
 }
