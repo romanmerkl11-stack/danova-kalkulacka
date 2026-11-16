@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NetDenied, SOURCE_LABELS } from "../../net/net";
 import { checkAppUpdate, type ReleaseInfo } from "../../net/sources";
 import { isTauri, makeBackup, openFile, parseBackup, saveFileAs, saveSafetyCopy, type AppData, type Settings, type SourceId } from "../../store/storage";
-import { APP_VERSION, isNewerVersion } from "../../version";
+import { APP_VERSION, isNewerVersion, windowsDownloadUrl } from "../../version";
 import { skDateTime } from "../format";
 import { cardDef, resolveLayout } from "../calcLayout";
 
@@ -166,7 +166,13 @@ export function SettingsTab({ data, setData, onReplaceData }: Props) {
 
       <section className="card">
         <h2>Aktualizácia aplikácie</h2>
-        <p className="note">Nainštalovaná verzia: {APP_VERSION}</p>
+        <p className="note">{isTauri() ? "Nainštalovaná verzia" : "Verzia"}: {APP_VERSION}</p>
+        {!isTauri() && (
+          <p>
+            <a className="download-btn" href={windowsDownloadUrl()}>⬇ Stiahnuť aplikáciu pre Windows</a>{" "}
+            <span className="note small">Po spustení súboru môže Windows ukázať „Systém Windows ochránil váš počítač“ – kliknite na „Ďalšie informácie“ → „Spustiť aj tak“.</span>
+          </p>
+        )}
         <div className="row">
           <button type="button" onClick={checkUpdate} disabled={repoUnset || upd.busy}>{upd.busy ? "Kontrolujem…" : "Skontrolovať novú verziu"}</button>
         </div>

@@ -23,7 +23,7 @@ import { HowTab } from "./ui/tabs/HowTab";
 import { RatesTab } from "./ui/tabs/RatesTab";
 import { AdvisorTab } from "./ui/tabs/AdvisorTab";
 import { SettingsTab } from "./ui/tabs/SettingsTab";
-import { APP_VERSION, isNewerVersion } from "./version";
+import { APP_VERSION, isNewerVersion, windowsDownloadUrl } from "./version";
 
 const TABS = ["Rýchly výpočet", "Výpočet", "História", "Sadzby", "Poradca", "Nastavenia", "Ako sa to počíta"] as const;
 type Tab = (typeof TABS)[number];
@@ -375,9 +375,16 @@ export default function App() {
             )
           }
         />
-        <button type="button" className="link-btn feedback-link" onClick={() => requestFeedback()}>
-          {data.feedbackDraft?.what.trim() ? "Rozpísané hlásenie" : "Nahlásiť problém / návrh"}
-        </button>
+        <div className="header-links">
+          {!isTauri() && (
+            <a className="download-btn" href={windowsDownloadUrl()} title="Inštalačný súbor pre Windows – výpočty sa ukladajú v počítači">
+              ⬇ Stiahnuť aplikáciu pre Windows
+            </a>
+          )}
+          <button type="button" className="link-btn" onClick={() => requestFeedback()}>
+            {data.feedbackDraft?.what.trim() ? "Rozpísané hlásenie" : "Nahlásiť problém / návrh"}
+          </button>
+        </div>
         <button type="button" className="menu-btn" aria-expanded={menuOpen} aria-controls="main-tabs" onClick={() => setMenuOpen(!menuOpen)}>
           <span className="menu-icon" aria-hidden="true">☰</span>
           {tab}

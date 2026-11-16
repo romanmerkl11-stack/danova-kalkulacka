@@ -20,3 +20,7 @@ export function isNewerVersion(a: string, b: string): boolean {
   }
   return false;
 }
+
+/** Priamy odkaz na inštalátor pre Windows k tejto verzii (súbor z GitHub Releases). */
+export const windowsDownloadUrl = (version: string = APP_VERSION) =>
+  `https://github.com/romanmerkl11-stack/danova-kalkulacka/releases/download/v${version}/Danova.kalkulacka_${version}_x64-setup.exe`;
