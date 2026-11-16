@@ -189,8 +189,8 @@ export function SettingsTab({ data, setData, onReplaceData }: Props) {
           ))}
       </section>
       <section className="card">
-        <h2>Karty na záložke Výpočet</h2>
-        <p className="note small">Zvoľte, ktoré karty sa zobrazia v pravom stĺpci záložky Výpočet, a ich poradie.</p>
+        <h2>Karty na záložke Podrobný výpočet</h2>
+        <p className="note small">Zvoľte, ktoré karty sa zobrazia v pravom stĺpci záložky Podrobný výpočet, a ich poradie.</p>
         <ul className="layout-list">
           {layout.map((l, i) => {
             const name = cardDef(l.id)?.title ?? l.id;

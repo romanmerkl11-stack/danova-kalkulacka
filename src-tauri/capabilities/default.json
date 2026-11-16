@@ -11,7 +11,9 @@
       "allow": [
         { "url": "https://api.statistics.sk/*" },
         { "url": "https://raw.githubusercontent.com/*" },
-        { "url": "https://api.github.com/*" }
+        { "url": "https://api.github.com/*" },
+        { "url": "https://script.google.com/macros/s/*" },
+        { "url": "https://script.googleusercontent.com/*" }
       ]
     },
     "fs:default",

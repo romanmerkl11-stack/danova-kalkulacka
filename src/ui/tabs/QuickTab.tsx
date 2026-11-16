@@ -11,6 +11,7 @@ import { StepsList } from "../StepsList";
 import { AssignNotice } from "../AssignNotice";
 import { filingHeadline } from "../FilingPanel";
 import { PROFILES } from "../ProfileSwitch";
+import { requestFeedback } from "../../feedback/FeedbackDialog";
 import { staircase } from "../quick";
 import { buildQuickInput, contributionLimits, contributionThresholds, incomeLimits, taxStartThreshold, SLIDER_STEP, sliderMax, toDetailedInput, transferReport, nearestTicks, ATTENTION_LIMITS, type TransferReport, withoutOwnContributions, type QuickState } from "../quick";
 
@@ -330,18 +331,6 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed,
 
       <StepsList result={result} input={buildQuickInput(dq, dq.expenses !== null)} update={() => undefined} readOnly cardId="card-quick-steps" defaultOpen={false} />
 
-      <div className="quick-actions">
-        <button
-          type="button"
-          onClick={() => {
-            const r = transferReport(quick, lastInput);
-            if (r.overwritten.length > 0 || r.kept.length > 0) setTransfer(r);
-            else onDetailed(toDetailedInput(quick, lastInput));
-          }}
-        >
-          Podrobný výpočet →
-        </button>
-      </div>
       {transfer && (
         <div className="box warn" role="alert">
           <p style={{ margin: "0 0 6px" }}>
@@ -357,6 +346,19 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed,
               </ul>
             </>
           )}
+      <div className="calc-bar quick-bar" role="region" aria-label="Ďalší krok">
+        <button type="button" className="link-btn bar-feedback" onClick={() => requestFeedback()}>Nahlásiť problém / návrh</button>
+        <button
+          type="button"
+          onClick={() => {
+            const r = transferReport(quick, lastInput);
+            if (r.overwritten.length > 0 || r.kept.length > 0) setTransfer(r);
+            else onDetailed(toDetailedInput(quick, lastInput));
+          }}
+        >
+          Podrobný výpočet →
+        </button>
+      </div>
           {transfer.kept.length > 0 && (
             <>
               <p style={{ margin: "0 0 4px" }}>Zostane z rozpracovaného výpočtu a výsledok sa bude líšiť od rýchleho:</p>

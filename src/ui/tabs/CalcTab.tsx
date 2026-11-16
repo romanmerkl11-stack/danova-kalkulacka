@@ -170,6 +170,7 @@ export function CalcTab({ input, update, replaceInput, nickname, onNickname, cal
               </button>
             ))}
           </nav>
+          <button type="button" className="link-btn bar-feedback" onClick={() => requestFeedback()}>Nahlásiť problém / návrh</button>
         </div>
       )}
       {bankOpen && (

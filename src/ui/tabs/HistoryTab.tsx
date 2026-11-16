@@ -171,7 +171,7 @@ export function HistoryTab({ data, setData, params, onOpen }: Props) {
           <p>Zatiaľ nemáte žiadne uložené výpočty.</p>
           <div className="row"><button type="button" className="ghost" onClick={importJson}>Importovať výpočet (JSON)</button></div>
           {ioError && <div className="box danger" role="alert">{ioError}</div>}
-          <p className="note">V záložke „Výpočet“ zadajte údaje a stlačte tlačidlo „Uložiť výpočet“. Uložené výpočty sa tu zoskupia podľa IČO a môžete ich znova otvoriť, duplikovať alebo porovnať.</p>
+          <p className="note">V záložke „Podrobný výpočet“ zadajte údaje a stlačte tlačidlo „Uložiť výpočet“. Uložené výpočty sa tu zoskupia podľa IČO a môžete ich znova otvoriť, duplikovať alebo porovnať.</p>
         </section>
       </main>
     );

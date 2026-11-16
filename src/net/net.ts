@@ -20,6 +20,7 @@ export const SOURCE_LABELS: Record<SourceId, string> = {
   rpo: "Register právnických osôb (Štatistický úrad SR)",
   params: "Aktualizácia sadzieb a limitov",
   appUpdate: "Kontrola novej verzie aplikácie",
+  feedback: "Odoslanie spätnej väzby autorovi aplikácie",
 };
 
 export interface NetContext {

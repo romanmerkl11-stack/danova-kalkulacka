@@ -5,7 +5,6 @@
 @media (max-width: 560px) { .fb-amounts { grid-template-columns: 1fr; } }
 .fb-preview { white-space: pre-wrap; word-break: break-word; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; max-height: 45vh; overflow-y: auto; font-size: 0.85rem; }
 .app-header { position: relative; }
-.header-links { position: absolute; top: 12px; right: 20px; display: flex; align-items: center; gap: 16px; font-size: 0.85rem; }
 .download-btn { display: inline-block; padding: 5px 12px; border-radius: 8px; background: var(--accent); color: var(--accent-text, #fff); text-decoration: none; font-weight: 600; }
 .download-btn:hover { filter: brightness(1.08); }
-@media (max-width: 760px) { .header-links { position: static; justify-content: flex-end; margin-top: 6px; } }
+@media (max-width: 760px) { 

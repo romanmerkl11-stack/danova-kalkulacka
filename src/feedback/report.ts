@@ -154,6 +154,23 @@ export function mailtoUrl(to: string, d: FeedbackDraft, c: FeedbackContext): { u
   return { url: `mailto:${to}?subject=${enc(subject(d))}&body=${enc(short)}`, tooLong: true };
 }
 
+/**
+ * Adresa sprostredkovateľa (Google Apps Script), ktorý z hlásenia vytvorí issue v súkromnom repe.
+ * Prázdne = priame odoslanie nie je nastavené (ostáva e-mail / kópia / súbor). Návod: docs/SPATNA-VAZBA.md
+ */
+export const FEEDBACK_ENDPOINT = "";
+
+export interface SendResult {
+  ok: boolean;
+  number?: number;
+  error?: string;
+}
+
+/** Telo požiadavky pre sprostredkovateľa – len text z náhľadu, nič navyše. */
+export function sendPayload(d: FeedbackDraft, c: FeedbackContext): { id: string; kind: FeedbackKind; title: string; body: string } {
+  return { id: d.id, kind: d.kind, title: subject(d).replace(/^\[Daňová kalkulačka\]/, "").trim(), body: reportText(d, c) };
+}
+
 // Kontakt na vlastníka. Poskladaný z kúskov, aby ho v zdrojáku nenašli zberače adries;
 // vo formulári sa nezobrazuje (uvidí ho až poštová aplikácia).
 const C = ["switch", "raven", "gmail", "com"];

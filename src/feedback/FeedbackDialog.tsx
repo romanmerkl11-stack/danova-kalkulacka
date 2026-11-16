@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { openExternal } from "../net/open";
 import { isTauri, saveFileAs } from "../store/storage";
 import { KIND_LABEL, feedbackAddress, isEmpty, mailtoUrl, reportText, type FeedbackContext, type FeedbackDraft, type FeedbackKind } from "./report";
+import { canSendDirectly, sendFeedback } from "./send";
+import { NetDenied } from "../net/net";
 import "./feedback.css";
 
 interface Props {
@@ -40,6 +42,9 @@ export function FeedbackDialog({ draft, context, onDraft, onDone, onClose }: Pro
   const [step, setStep] = useState<"form" | "preview">("form");
   const [status, setStatus] = useState<{ text: string; kind: "ok" | "err" } | null>(null);
   const [handedOver, setHandedOver] = useState(false);
+  const [sending, setSending] = useState(false);
+  /** číslo záznamu po potvrdenom odoslaní */
+  const [sent, setSent] = useState<number | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const firstRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLHeadingElement>(null);
@@ -65,6 +70,28 @@ export function FeedbackDialog({ draft, context, onDraft, onDone, onClose }: Pro
 
   const set = (patch: Partial<FeedbackDraft>) => onDraft({ ...draft, ...patch });
   const text = reportText(draft, context);
+
+  const send = async () => {
+    setStatus(null);
+    setSending(true);
+    try {
+      const r = await sendFeedback(draft, context);
+      if (r.ok) {
+        setSent(r.number ?? null);
+        setStatus({ kind: "ok", text: `Odoslané – hlásenie je uložené (záznam č. ${r.number}). Ďakujeme!` });
+      } else setStatus({ kind: "err", text: `Hlásenie sa nepodarilo odoslať: ${r.error} Koncept ostáva – skúste to znova alebo použite „Skopírovať“.` });
+    } catch (e) {
+      setStatus({
+        kind: "err",
+        text:
+          e instanceof NetDenied
+            ? `${e.message} Hlásenie môžete skopírovať alebo uložiť do súboru.`
+            : `Hlásenie sa nepodarilo odoslať (${e instanceof Error ? e.message : String(e)}). Koncept ostáva – skúste to znova alebo použite „Skopírovať“.`,
+      });
+    } finally {
+      setSending(false);
+    }
+  };
 
   const prepareMail = async () => {
     setStatus(null);
@@ -165,7 +192,7 @@ export function FeedbackDialog({ draft, context, onDraft, onDone, onClose }: Pro
                 </div>
               </div>
             )}
-            {field("steps", "Ako sa to dá zopakovať? (nepovinné)", "napr. Výpočet → rok 2026 → zmena paušálu na skutočné výdavky")}
+            {field("steps", "Ako sa to dá zopakovať? (nepovinné)", "napr. Podrobný výpočet → rok 2026 → zmena paušálu na skutočné výdavky")}
             {(draft.kind === "vypocet" || draft.source.trim() !== "") &&
               field("source", "Odborná poznámka alebo zdroj (nepovinné)", "rok, riadok DP, ustanovenie zákona, odkaz – môžete pridať aj vymyslený testovací príklad")}
             <div className="fb-amounts">
@@ -188,27 +215,38 @@ export function FeedbackDialog({ draft, context, onDraft, onDone, onClose }: Pro
         ) : (
           <>
             <h2 id="fb-title" ref={previewRef} tabIndex={-1}>Náhľad hlásenia</h2>
-            <p className="note small">Toto je celý obsah hlásenia. Nič sa neodošle automaticky.</p>
+            <p className="note small">Toto je celý obsah hlásenia. Nič sa neodošle bez vášho kliknutia.</p>
             <pre className="fb-preview">{text}</pre>
+            {sent !== null ? (
+              <div className="dialog-actions">
+                <button type="button" onClick={onDone}>Hotovo</button>
+              </div>
+            ) : (
             <div className="dialog-actions">
-              <button type="button" onClick={() => void prepareMail()}>Pripraviť e-mail</button>
+              {canSendDirectly() && (
+                <button type="button" disabled={sending} onClick={() => void send()}>
+                  {sending ? "Odosielam…" : "Odoslať"}
+                </button>
+              )}
+              <button type="button" className={canSendDirectly() ? "ghost" : undefined} onClick={() => void prepareMail()}>Pripraviť e-mail</button>
               <button type="button" className="ghost" onClick={() => void copy()}>Skopírovať</button>
               <button type="button" className="ghost" onClick={() => void saveFile()}>Uložiť do súboru</button>
               <button type="button" className="ghost" onClick={() => setStep("form")}>Späť upraviť</button>
             </div>
+            )}
             {status && (
               <p className={status.kind === "ok" ? "note" : "note bad-text"} role="status">
                 {status.text}
               </p>
             )}
-            <div className="dialog-actions">
+            {sent === null && <div className="dialog-actions">
               {handedOver && (
                 <button type="button" onClick={onDone}>
                   Mám odoslané – zmazať koncept
                 </button>
               )}
               <button type="button" className="ghost" onClick={onClose}>Zavrieť (koncept ostane)</button>
-            </div>
+            </div>}
           </>
         )}
         {confirmDiscard && (

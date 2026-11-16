@@ -25,7 +25,10 @@ import { AdvisorTab } from "./ui/tabs/AdvisorTab";
 import { SettingsTab } from "./ui/tabs/SettingsTab";
 import { APP_VERSION, isNewerVersion, windowsDownloadUrl } from "./version";
 
-const TABS = ["Rýchly výpočet", "Výpočet", "História", "Sadzby", "Poradca", "Nastavenia", "Ako sa to počíta"] as const;
+const TABS = ["Rýchly výpočet", "Podrobný výpočet", "História", "Sadzby", "Poradca", "Nastavenia", "Ako sa to počíta"] as const;
+/** hlavné záložky viditeľné vždy; ostatné sú v menu ☰ */
+const MAIN_TABS: readonly Tab[] = ["Rýchly výpočet", "Podrobný výpočet"];
+const MENU_TABS: readonly Tab[] = TABS.filter((t) => !MAIN_TABS.includes(t));
 type Tab = (typeof TABS)[number];
 
 const years = Object.keys(PARAMS).map(Number);
@@ -142,6 +145,16 @@ export default function App() {
       timerRef.current = null;
     };
   }, [data, persist]);
+
+  // menu ☰ sa zavrie klikom mimo neho
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement | null)?.closest?.(".more-menu")) setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [menuOpen]);
 
   // „Nahlásiť tento problém“ odkiaľkoľvek v appke
   useEffect(() => {
@@ -310,7 +323,7 @@ export default function App() {
     setData((d) => (d ? { ...d, lastInput: structuredClone(c.input), lastIco: c.ico, lastNickname: c.nickname ?? "" } : d));
     setIcoState(c.ico);
     setCurrentCalcId(c.id);
-    setTab("Výpočet");
+    setTab("Podrobný výpočet");
   };
 
   const loadInput = (i: CalcInput, newIco?: string) => {
@@ -375,36 +388,64 @@ export default function App() {
             )
           }
         />
-        <div className="header-links">
-          {!isTauri() && (
-            <a className="download-btn" href={windowsDownloadUrl()} title="Inštalačný súbor pre Windows – výpočty sa ukladajú v počítači">
-              ⬇ Stiahnuť aplikáciu pre Windows
-            </a>
-          )}
-          <button type="button" className="link-btn" onClick={() => requestFeedback()}>
-            {data.feedbackDraft?.what.trim() ? "Rozpísané hlásenie" : "Nahlásiť problém / návrh"}
-          </button>
-        </div>
-        <button type="button" className="menu-btn" aria-expanded={menuOpen} aria-controls="main-tabs" onClick={() => setMenuOpen(!menuOpen)}>
-          <span className="menu-icon" aria-hidden="true">☰</span>
-          {tab}
-        </button>
-        <nav id="main-tabs" className={`tabs${menuOpen ? " open" : ""}`} role="tablist" aria-label="Sekcie">
-          {TABS.map((t) => (
-            <button
-              key={t}
-              type="button"
-              role="tab"
-              aria-selected={tab === t}
-              className={tab === t ? "tab active" : "tab"}
-              onClick={() => {
-                setTab(t);
-                setMenuOpen(false);
-              }}
-            >
+        <nav className="tabs" aria-label="Sekcie">
+          {MAIN_TABS.map((t) => (
+            <button key={t} type="button" aria-current={tab === t ? "page" : undefined} className={tab === t ? "tab active" : "tab"} onClick={() => setTab(t)}>
               {t}
             </button>
           ))}
+          <div className="more-menu">
+            <button
+              type="button"
+              className={`tab more-btn${MENU_TABS.includes(tab) ? " active" : ""}`}
+              aria-haspopup="true"
+              aria-expanded={menuOpen}
+              aria-controls="more-menu"
+              onClick={() => setMenuOpen(!menuOpen)}
+            >
+              <span aria-hidden="true">☰</span> {MENU_TABS.includes(tab) ? tab : "Ďalšie"}
+            </button>
+            {menuOpen && (
+              <div
+                id="more-menu"
+                className="more-list"
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") setMenuOpen(false);
+                }}
+              >
+                {MENU_TABS.map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    aria-current={tab === t ? "page" : undefined}
+                    className={tab === t ? "more-item active" : "more-item"}
+                    onClick={() => {
+                      setTab(t);
+                      setMenuOpen(false);
+                    }}
+                  >
+                    {t}
+                  </button>
+                ))}
+                <hr />
+                {!isTauri() && (
+                  <a className="more-item" href={windowsDownloadUrl()} onClick={() => setMenuOpen(false)}>
+                    ⬇ Stiahnuť aplikáciu pre Windows
+                  </a>
+                )}
+                <button
+                  type="button"
+                  className="more-item"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    requestFeedback();
+                  }}
+                >
+                  Nahlásiť problém / návrh
+                </button>
+              </div>
+            )}
+          </div>
         </nav>
       </header>
 
@@ -444,13 +485,13 @@ export default function App() {
           onDetailed={(i) => {
             setData((d) => (d ? { ...d, lastInput: i } : d));
             setCurrentCalcId(null);
-            setTab("Výpočet");
+            setTab("Podrobný výpočet");
           }}
           lastInput={data.lastInput}
-          onOpenDetailed={() => setTab("Výpočet")}
+          onOpenDetailed={() => setTab("Podrobný výpočet")}
         />
       )}
-      {tab === "Výpočet" && (
+      {tab === "Podrobný výpočet" && (
         <CalcTab
           input={input}
           update={update}

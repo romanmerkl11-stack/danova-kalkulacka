@@ -48,7 +48,7 @@ export interface SavedCalc {
   summary: { income: number; tax: number; taxToPay: number; sp: number; zp: number; net: number };
 }
 
-export type SourceId = "rpo" | "params" | "appUpdate";
+export type SourceId = "rpo" | "params" | "appUpdate" | "feedback";
 
 export interface Settings {
   /** nepýtať sa pred prístupom na internet (pre všetky zdroje) */
