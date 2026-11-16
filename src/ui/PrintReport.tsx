@@ -34,8 +34,8 @@ export function PrintReport({ result, input, title, companyName, ico }: Props) {
           <tr><th>{s.taxToPay < 0 ? "Preplatok" : "Daň na úhradu"}</th><td className="r">{eur(Math.abs(s.taxToPay))}</td></tr>
           <tr><th>Sociálne poistenie</th><td className="r">{eur(s.sp)}</td></tr>
           <tr><th>Zdravotné poistenie</th><td className="r">{eur(s.zp)}</td></tr>
-          <tr><th>Čistý príjem ročne</th><td className="r">{eur(s.net)}</td></tr>
-          <tr><th>Čistý príjem mesačne</th><td className="r">{eur(s.netMonthly)}</td></tr>
+          <tr><th>Príjem po dani a odvodoch</th><td className="r">{eur(s.net)}</td></tr>
+          <tr><th>Príjem po dani a odvodoch mesačne</th><td className="r">{eur(s.netMonthly)}</td></tr>
           <tr><th>Efektívne zaťaženie</th><td className="r">{pct(s.effectiveRate)}</td></tr>
         </tbody>
       </table>

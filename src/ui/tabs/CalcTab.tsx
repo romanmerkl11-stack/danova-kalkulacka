@@ -1,3 +1,4 @@
+import { ResultNotices } from "../ResultNotices";
 import { AssignNotice } from "../AssignNotice";
 import { openFile } from "../../store/storage";
 import type { ParamSet } from "../../params/types";
@@ -143,7 +144,10 @@ export function CalcTab({ input, update, replaceInput, nickname, onNickname, cal
             Výpočet sa nepodarilo dokončiť: {calc.error}
           </div>
         ) : (
-          layout.map((l) => <div key={l.id} className="result-slot">{render(l.id)}</div>)
+          <>
+            <ResultNotices result={result} />
+            {layout.map((l) => <div key={l.id} className="result-slot">{render(l.id)}</div>)}
+          </>
         )}
       </div>
       {result && (

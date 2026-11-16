@@ -14,7 +14,7 @@ export function SummaryPanel({ result }: { result: CalcResult }) {
   const s = result.summary;
   const refund = s.taxToPay < 0;
   return (
-    <UiCard id="card-summary" title={`Súhrn za rok ${result.year}`} defaultOpen={false}>
+    <UiCard id="card-summary" title={`Súhrn za rok ${result.year}`} defaultOpen>
       <div className="stats">
         <Card label="Príjmy" value={eur(s.income)} />
         <Card label="Daň" value={eur(s.tax)} />
@@ -27,18 +27,9 @@ export function SummaryPanel({ result }: { result: CalcResult }) {
             <Card label="Zdravotné poistenie" value={eur(s.zp)} />
           </>
         )}
-        <Card label="Čistý príjem" value={eur(s.net)} sub={`${eur(s.netMonthly)} mesačne`} tone="good" />
+        <Card label="Príjem po dani a odvodoch" value={eur(s.net)} sub={`${eur(s.netMonthly)} mesačne`} tone="good" />
         <Card label="Efektívne zaťaženie" value={s.effectiveRate > 1 ? "nad 100 %" : pct(s.effectiveRate)} sub={s.effectiveRate > 1 ? "odvody sú vyššie ako príjmy" : "daň + odvody z príjmov"} />
       </div>
-      {result.warnings.length > 0 && (
-        <div className="warnings">
-          {result.warnings.map((w) => (
-            <div key={w.id} className={`box ${w.severity}`} role={w.severity === "danger" ? "alert" : undefined}>
-              {w.text}
-            </div>
-          ))}
-        </div>
-      )}
     </UiCard>
   );
 }

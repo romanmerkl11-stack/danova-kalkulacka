@@ -49,8 +49,8 @@ function Compare({ a, b, params }: { a: SavedCalc; b: SavedCalc; params: ParamSe
     const sb = rb.stepById[id];
     if (sa && sb) money(label, sa.value, sb.value);
   }
-  money("Čistý príjem", ra.summary.net, rb.summary.net);
-  money("Čistý príjem mesačne", ra.summary.netMonthly, rb.summary.netMonthly);
+  money("Príjem po dani a odvodoch", ra.summary.net, rb.summary.net);
+  money("Príjem po dani a odvodoch mesačne", ra.summary.netMonthly, rb.summary.netMonthly);
   rows.push({
     label: "Efektívne zaťaženie",
     a: pct(ra.summary.effectiveRate),
@@ -218,7 +218,7 @@ export function HistoryTab({ data, setData, params, onOpen }: Props) {
                       <div><dt>Príjmy</dt><dd>{eur(c.summary.income)}</dd></div>
                       <div><dt>Daň</dt><dd>{eur(c.summary.tax)}</dd></div>
                       <div><dt>Daň na úhradu</dt><dd>{eur(c.summary.taxToPay)}</dd></div>
-                      <div><dt>Čistý príjem</dt><dd>{eur(c.summary.net)}</dd></div>
+                      <div><dt>Príjem po dani a odvodoch</dt><dd>{eur(c.summary.net)}</dd></div>
                     </dl>
                   </div>
                   <div className="hist-actions">

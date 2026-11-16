@@ -235,3 +235,9 @@ Web: https://romanmerkl11-stack.github.io/danova-kalkulacka/ (push do main = nas
 - **Nová verzia:** desktop pri štarte (predvolene zapnuté, s povolením) zistí posledné vydanie; pruh „Je k dispozícii nová verzia … Stiahnuť“ otvorí priamo `.exe`. Odkazy na web sa v desktope otvárajú v systémovom prehliadači (`src/net/open.ts`).
 - Mesačné príjmy sa zadávajú priamo v Základných údajoch (12 polí), tabuľka mesiacov ich len zobrazuje.
 - Odložené do plánu: ťahák „čo kam napísať“ do DP.
+
+## 12. Audit od Codexu (15. 11. 2026, verzia v0.1.0) – stav
+Audit (súbor od používateľa, nie v repe) overený na aktuálnom kóde. Reprodukované: F01, F02, F05, F06; potvrdené v kóde: F03, F04, F09, F13; ostatné (F07, F08, F10–F15, U01–U12, G01–G06) sedia s kódom, F10/F11 treba overiť na oficiálnych zdrojoch.
+**Balík A – hotové (16. 11.):** F01 jednotný súhrn (príjmy = živnosť + mzda + prenájom + § 8; „Príjem po dani a odvodoch“ = príjmy − daň po bonuse − odvody SZČO − poistné zamestnanca, pred nákladmi; test `src/engine/summary.test.ts`), F02 neznáme odvody „Zatiaľ neznáme“ + texty o použitých sadzbách, varovania vždy viditeľné (`src/ui/ResultNotices.tsx`) v Rýchlom výpočte aj nad kartami Výpočtu, Súhrn predvolene otvorený, názvy „Daňové výdavky“ a „Príjem po dani a odvodoch“ všade (UI, História, export, tlač, Poradca).
+**Ďalej (návrh poradia):** B ochrana dát (F03 potvrdený zápis, F04 recovery pri poškodených dátach, F05 validácia zálohy – pozor `withRealRepo` padá na `paramsUrl: null`), C výpis z účtu (F06 mena/vratky, F07 čiastočné obdobia, F08 deduplikácia), D (F09 prenos Rýchly → Podrobný, F12 snapshot sadzieb v Histórii, F14), E (F13 front súhlasov, F15 neplatný vstup), spätná väzba (sekcia 14 – treba e-mail vlastníka).
+**Zámerne ponechané podľa používateľa:** plávajúci odznak 2 % a výber profilu v nadpise (audit navrhuje zmeniť – predložiť zvlášť).

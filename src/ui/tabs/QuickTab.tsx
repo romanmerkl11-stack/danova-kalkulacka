@@ -1,3 +1,4 @@
+import { ResultNotices } from "../ResultNotices";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { calculate } from "../../engine/calc";
 import { eur, pct } from "../../engine/money";
@@ -174,16 +175,16 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed 
           </section>
         )}
 
-        {!emp && <section className="card" aria-label="Výdavky">
+        {!emp && <section className="card" aria-label="Daňové výdavky">
           <div className="quick-head">
-            <h2>Výdavky</h2>
+            <h2>Daňové výdavky</h2>
             {quick.expenses !== null && (
               <button type="button" className="link-btn" onClick={() => set({ expenses: null })}>Vrátiť automatiku</button>
             )}
           </div>
           <NumberInput
             className="big"
-            ariaLabel="Výdavky"
+            ariaLabel="Daňové výdavky"
             allowNull
             value={quick.expenses}
             placeholder={autoExpenses.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -229,7 +230,7 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed 
             <Stat label="Daň" value={eur(s.tax)} tone="main" />
             <Stat label={refund ? "Preplatok" : "Nedoplatok"} value={eur(Math.abs(s.taxToPay))} sub={refund ? "vráti vám daňový úrad / zamestnávateľ" : "doplatíte pri daňovom priznaní"} tone={refund ? "good" : "main"} />
             <Stat label="Daňové priznanie" value={f.type ? `typ ${f.type}` : "netreba"} sub={filingHeadline(result)} />
-            <Stat label="Čistý príjem ročne" value={eur(s.net)} sub={`${eur(s.netMonthly)} mesačne`} tone="good" />
+            <Stat label="Príjem po dani a odvodoch" value={eur(s.net)} sub={`${eur(s.netMonthly)} mesačne`} tone="good" />
           </div>
         ) : (
         <div className="stats">
@@ -237,26 +238,31 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed 
           <Stat label={`Odvody za ${result.year}`} value={eur(s.sp + s.zp)} sub={`SP ${eur(s.sp)} · ZP ${eur(s.zp)}`} />
           <Stat
             label={`Nové odvody ${n.year} mesačne`}
-            value={eur(n.spFromJuly + n.zpMonthly)}
-            sub={`SP od 7/${n.year}: ${eur(n.spFromJuly)}${REGIME[n.spRegime] ? ` (${REGIME[n.spRegime]})` : ""} · ZP ${n.year}: ${eur(n.zpMonthly)}`}
+            value={n.paramsStatus === "chýbajú" ? "Zatiaľ neznáme" : eur(n.spFromJuly + n.zpMonthly)}
+            sub={
+              n.paramsStatus === "chýbajú"
+                ? `Sadzby odvodov na rok ${n.year} ešte nie sú známe.`
+                : `${n.paramsStatus === "predbežné" ? "Odhad (predbežné sadzby) · " : ""}SP od 7/${n.year}: ${eur(n.spFromJuly)}${REGIME[n.spRegime] ? ` (${REGIME[n.spRegime]})` : ""} · ZP ${n.year}: ${eur(n.zpMonthly)}`
+            }
           />
           {s.income > 0 ? (
             <>
               <Stat
-                label="Čistý príjem ročne"
+                label="Príjem po dani a odvodoch"
                 value={eur(s.net)}
                 sub={`${eur(s.netMonthly)} mesačne · zaťaženie ${s.effectiveRate > 1 ? "nad 100 %" : pct(s.effectiveRate)} (daň + odvody)`}
                 tone="good"
               />
             </>
           ) : (
-            <Stat label="Čistý príjem ročne" value="—" sub="Zadajte príjmy za rok – odvody sa platia aj bez príjmov." tone="good" />
+            <Stat label="Príjem po dani a odvodoch" value="—" sub="Zadajte príjmy za rok – odvody sa platia aj bez príjmov." tone="good" />
           )}
         </div>
         )}
       </section>
 
       <AssignNotice tax={result.summary.tax} year={result.year} />
+      <ResultNotices result={result} hideLimitWarnings />
 
       {exceeded.length > 0 && (
         <div className="quick-warn">

@@ -26,7 +26,7 @@ export function PausalCard({ input, params, value, onChange }: Props) {
     ["Daň", (s) => s.tax],
     ["Odvody tento rok (SP + ZP)", (s) => s.odvody],
     ["Odvody budúci rok (odhad)", (s) => s.nextOdvody],
-    ["Čistý príjem", (s) => s.net],
+    ["Príjem po dani a odvodoch", (s) => s.net],
   ];
   return (
     <Card id="card-pausal" title="Paušál alebo skutočné výdavky?">

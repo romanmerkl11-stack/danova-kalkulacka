@@ -96,8 +96,8 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
   if (taxYear !== Y) {
     warnings.push({
       id: "tax-params-missing",
-      severity: "danger",
-      text: `Daňové sadzby pre rok ${Y} ešte nie sú v appke. Použili sa sadzby roka ${taxYear}. Skontrolujte nové sadzby v Nastaveniach.`,
+      severity: "warn",
+      text: `Daň za rok ${Y} je orientačne vypočítaná podľa sadzieb roka ${taxYear} – sadzby na rok ${Y} ešte nie sú známe. Nové sadzby skontrolujete v záložke Sadzby.`,
     });
   }
   if (!yp) {
@@ -833,11 +833,12 @@ export function calculate(input: CalcInput, params: ParamSet = PARAMS): CalcResu
   }
 
   // ---------- 11. Súhrn ----------
-  const otherNet = round2(round2(input.rental.income - input.rental.expenses) + otherIncomeTotal - occExpenses - ineExpenses);
-  const net = isEmp
-    ? round2(emp.gross - emp.insurance + otherNet - Math.max(0, taxTotal - bonus))
-    : round2(income - Math.max(0, taxTotal - bonus) - spPaid - zpPaid);
-  const summaryIncome = isEmp ? round2(emp.gross + input.rental.income + otherIncomeTotal) : income;
+  // Jednotný súhrn pre všetky profily (SZČO, zamestnanec, súbeh):
+  //   príjmy = živnosť + hrubá mzda + prenájom + § 8
+  //   príjem po dani a odvodoch = príjmy − daň po bonuse − odvody SZČO − poistné zamestnanca
+  // Obe sumy sú PRED skutočnými nákladmi (paušál ani výdavky na prenájom/§ 8 sa neodpočítavajú).
+  const summaryIncome = round2(income + emp.gross + input.rental.income + otherIncomeTotal);
+  const net = round2(summaryIncome - Math.max(0, taxTotal - bonus) - spPaid - zpPaid - emp.insurance);
   const stepById = Object.fromEntries(steps.map((s) => [s.id, s]));
   return {
     year: Y,
@@ -889,10 +890,10 @@ function computeNext(
     paramsStatus: ypNext ? ypNext.status : "chýbajú",
   };
   if (!ypNext) {
-    warnings.push({ id: "next-missing", severity: "warn", text: `Odvodové parametre na rok ${N} ešte nie sú známe – odvody na budúci rok sa nedajú spočítať.` });
+    warnings.push({ id: "next-missing", severity: "warn", text: `Sadzby odvodov na rok ${N} ešte nie sú známe – odvody na rok ${N} zatiaľ nevieme odhadnúť.` });
   } else {
     if (ypNext.status === "predbežné") {
-      warnings.push({ id: "next-prelim", severity: "info", text: `Parametre na rok ${N} sú predbežné (odvodené z dostupných údajov).` });
+      warnings.push({ id: "next-prelim", severity: "info", text: `Odvody na rok ${N} sú odhad – časť sadzieb na rok ${N} je predbežná (odvodená z dostupných údajov).` });
     }
     const sp = ypNext.sp;
     const vzRaw = czd6 / sp.koeficient / 12;

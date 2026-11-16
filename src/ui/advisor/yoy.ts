@@ -21,7 +21,7 @@ export function yoyRows(prev: CalcResult, cur: CalcResult): YoyRow[] {
     { label: "Príjmy", prev: prev.summary.income, cur: cur.summary.income, kind: "eur", higherBetter: true },
     { label: "Daň", prev: prev.summary.tax, cur: cur.summary.tax, kind: "eur", higherBetter: false },
     { label: "Odvody spolu", prev: odvodyOf(prev), cur: odvodyOf(cur), kind: "eur", higherBetter: false },
-    { label: "Čistý príjem", prev: prev.summary.net, cur: cur.summary.net, kind: "eur", higherBetter: true },
+    { label: "Príjem po dani a odvodoch", prev: prev.summary.net, cur: cur.summary.net, kind: "eur", higherBetter: true },
     { label: "Efektívne zaťaženie", prev: prev.summary.effectiveRate, cur: cur.summary.effectiveRate, kind: "pct", higherBetter: false },
   ];
 }

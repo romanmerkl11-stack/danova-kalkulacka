@@ -61,8 +61,8 @@ export async function buildXlsx(result: CalcResult, input: CalcInput, meta: Expo
   money(s.taxToPay < 0 ? "Preplatok" : "Daň na úhradu", Math.abs(s.taxToPay));
   money("Sociálne poistenie", s.sp);
   money("Zdravotné poistenie", s.zp);
-  money("Čistý príjem ročne", s.net);
-  money("Čistý príjem mesačne", s.netMonthly);
+  money("Príjem po dani a odvodoch", s.net);
+  money("Príjem po dani a odvodoch mesačne", s.netMonthly);
   const eff = su.addRow(["Efektívne zaťaženie", s.effectiveRate]);
   eff.getCell(2).numFmt = "0.00%";
   su.getColumn(2).alignment = { horizontal: "right" };

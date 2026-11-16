@@ -38,7 +38,8 @@ export function computeReserve(r: CalcResult, now: Date): Reserve {
   const monthsLeft = today > deadline ? 0 : Math.max(1, (Y + 1 - fromY) * 12 + 3 - fromM + 1);
   const monthly = total <= 0 || payNow ? (total <= 0 ? 0 : null) : round2(total / monthsLeft);
   let increase: Reserve["increase"] = null;
-  if (includeZp) {
+  // neznáme sadzby budúceho roka → nárast odvodov neukazovať (nie je to 0 €, audit F02)
+  if (includeZp && r.next.paramsStatus !== "chýbajú") {
     const last = r.months[r.months.length - 1];
     const spNow = last?.sp ?? 0;
     const zpNow = last?.zp ?? 0;
