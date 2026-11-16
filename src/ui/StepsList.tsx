@@ -37,7 +37,7 @@ function StepRow({ step, input, update, readOnly }: { step: Step; input: CalcInp
         </span>
         {editing ? (
           <span className="step-edit">
-            <NumberInput ariaLabel={`Nová hodnota – ${step.label}`} value={draft} onChange={setDraft} allowNull />
+            <NumberInput ariaLabel={`Nová hodnota – ${step.label}`} value={draft} onChange={setDraft} allowNull allowNegative />
             <button type="button" onClick={save}>Uložiť</button>
             <button type="button" className="ghost" onClick={() => setEditing(false)}>Zrušiť</button>
           </span>

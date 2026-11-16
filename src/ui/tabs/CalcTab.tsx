@@ -1,4 +1,5 @@
 import { ResultNotices } from "../ResultNotices";
+import { requestFeedback } from "../../feedback/FeedbackDialog";
 import { AssignNotice } from "../AssignNotice";
 import { openFile } from "../../store/storage";
 import type { ParamSet } from "../../params/types";
@@ -35,7 +36,8 @@ interface Props {
   onFound: (c: Company) => void;
   calc: { result: CalcResult | null; error: string | null };
   currentCalc: SavedCalc | null;
-  onSave: (title: string, asNew: boolean) => void;
+  /** uloží výpočet; true až po potvrdenom zápise */
+  onSave: (title: string, asNew: boolean) => Promise<boolean>;
   companyName: string;
   onLoadInput: (input: CalcInput, ico?: string) => void;
   params: ParamSet;
@@ -46,19 +48,24 @@ interface Props {
 function SaveControls({ input, currentCalc, onSave }: Pick<Props, "input" | "currentCalc" | "onSave">) {
   const [asking, setAsking] = useState<null | { asNew: boolean; title: string }>(null);
   const [saved, setSaved] = useState(false);
+  const [failed, setFailed] = useState(false);
 
-  const flash = () => {
-    setSaved(true);
-    window.setTimeout(() => setSaved(false), 2500);
+  /** „Uložené“ sa ukáže až po potvrdenom zápise na disk */
+  const doSave = async (title: string, asNew: boolean) => {
+    setFailed(false);
+    const ok = await onSave(title, asNew);
+    if (ok) {
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 2500);
+    } else setFailed(true);
   };
   const defaultTitle = `Výpočet ${input.year} – ${skDate(new Date().toISOString())}`;
   const state = unsavedState(input, currentCalc?.input ?? null);
 
   const submit = () => {
     if (!asking) return;
-    onSave(asking.title.trim() || defaultTitle, asking.asNew);
+    void doSave(asking.title.trim() || defaultTitle, asking.asNew);
     setAsking(null);
-    flash();
   };
 
   return (
@@ -86,13 +93,14 @@ function SaveControls({ input, currentCalc, onSave }: Pick<Props, "input" | "cur
         <div className="save-actions">
           {currentCalc ? (
             <>
-              <button type="button" onClick={() => { onSave(currentCalc.title, false); flash(); }}>Uložiť zmeny</button>
+              <button type="button" onClick={() => void doSave(currentCalc.title, false)}>Uložiť zmeny</button>
               <button type="button" className="ghost" onClick={() => setAsking({ asNew: true, title: `${currentCalc.title} (kópia)` })}>Uložiť ako nový</button>
             </>
           ) : (
             <button type="button" onClick={() => setAsking({ asNew: true, title: defaultTitle })}>Uložiť výpočet</button>
           )}
           {saved && <span className="good-text" role="status">Uložené</span>}
+          {failed && <span className="bad-text" role="alert">Uloženie zlyhalo</span>}
         </div>
       )}
     </div>
@@ -137,11 +145,14 @@ export function CalcTab({ input, update, replaceInput, nickname, onNickname, cal
 
   return (
     <main className="layout calc-tab">
-      <InputsPanel input={input} update={update} replaceInput={replaceInput} nickname={nickname} onNickname={onNickname} ico={ico} onIco={onIco} company={company} onFound={onFound} />
+      <InputsPanel input={input} update={update} replaceInput={replaceInput} nickname={nickname} onNickname={onNickname} ico={ico} onIco={onIco} company={company} onFound={onFound} params={params} />
       <div className="results">
         {calc.error || !result ? (
           <div className="box danger" role="alert">
-            Výpočet sa nepodarilo dokončiť: {calc.error}
+            Výpočet sa nepodarilo dokončiť: {calc.error}{" "}
+            <button type="button" className="link-btn" onClick={() => requestFeedback({ kind: "vypocet", origin: "Chyba výpočtu", error: calc.error ?? undefined })}>
+              Nahlásiť tento problém
+            </button>
           </div>
         ) : (
           <>

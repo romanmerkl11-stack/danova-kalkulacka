@@ -50,6 +50,20 @@ describe("ostatné", () => {
     expect(extractSymbols("VS: 987 popis")).toEqual({ vs: "987" });
     expect(extractSymbols("variabilný symbol 55")).toEqual({ vs: "55" });
   });
+  it("mergeTxs páruje po kusoch (2 existujúce, 3 nové → 1 pridaná)", () => {
+    const t = (id: string): Tx => ({ id, date: "2025-01-02", amount: 5, counterparty: "A", raw: "" });
+    const r = mergeTxs([t("1"), t("2")], [t("3"), t("4"), t("5")]);
+    expect(r).toMatchObject({ added: 1, skipped: 2, suspect: 0 });
+  });
+  it("mergeTxs: rovnaký dátum a suma s inou protistranou = možná duplicita", () => {
+    const pdf: Tx = { id: "p", date: "2025-01-02", amount: 5, counterparty: "NOVAK JAN", raw: "" };
+    const csv: Tx = { id: "c", date: "2025-01-02", amount: 5, counterparty: "Ján Novák s.r.o.", vs: "12", raw: "" };
+    const other: Tx = { id: "o", date: "2025-01-03", amount: 5, counterparty: "X", raw: "" };
+    const r = mergeTxs([pdf], [csv, other]);
+    expect(r).toMatchObject({ added: 2, skipped: 0, suspect: 1 });
+    expect(r.txs.find((x) => x.id === "c")?.possibleDuplicate).toBe(true);
+    expect(r.txs.find((x) => x.id === "o")?.possibleDuplicate).toBeUndefined();
+  });
   it("mergeTxs preskočí existujúce, ponechá vnútorné duplicity", () => {
     const t = (id: string): Tx => ({ id, date: "2025-01-02", amount: 5, counterparty: "A", raw: "" });
     const r = mergeTxs([t("1")], [t("2"), { ...t("3"), amount: 6 }, { ...t("4"), amount: 6 }]);

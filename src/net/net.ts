@@ -30,6 +30,9 @@ export interface NetContext {
   log: (e: NetLogEntry) => void;
 }
 
+/** po tomto čase sa požiadavka zruší (nekonečné „Kontrolujem…“ pri výpadku siete) */
+export const NET_TIMEOUT_MS = 15000;
+
 let ctx: NetContext | null = null;
 export const setNetContext = (c: NetContext) => {
   ctx = c;
@@ -65,13 +68,24 @@ export async function netFetch(req: NetRequest, init?: RequestInit): Promise<Res
       throw new NetDenied();
     }
     if (d === "always") ctx.onAlwaysAllow(req.source);
+    // počas čakania na odpoveď mohol používateľ zapnúť offline režim
+    if (ctx.getSettings().offline) {
+      ctx.log({ ...base, result: "zamietnuté", detail: "offline režim" });
+      throw new NetDenied("Appka je v offline režime (Nastavenia).");
+    }
   }
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), NET_TIMEOUT_MS);
   try {
-    const res = await doFetch(req.url, init);
+    const res = await doFetch(req.url, { ...init, signal: ctrl.signal });
     ctx.log({ ...base, result: res.ok ? "ok" : "chyba", detail: `HTTP ${res.status}` });
     return res;
   } catch (e) {
-    ctx.log({ ...base, result: "chyba", detail: String(e) });
+    const timeout = ctrl.signal.aborted;
+    ctx.log({ ...base, result: "chyba", detail: timeout ? "časový limit" : String(e) });
+    if (timeout) throw new Error(`Server neodpovedal do ${NET_TIMEOUT_MS / 1000} s. Skontrolujte pripojenie a skúste to znova.`);
     throw e;
+  } finally {
+    clearTimeout(timer);
   }
 }

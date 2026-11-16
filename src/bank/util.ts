@@ -111,16 +111,43 @@ export const monthOf = (iso: string): number => Number(iso.slice(5, 7));
 export const yearOf = (iso: string): number => Number(iso.slice(0, 4));
 
 /** Kľúč pre odstránenie duplicít pri nahrávaní viacerých výpisov. */
-export const dedupeKey = (t: Tx): string => [t.date, t.amount.toFixed(2), t.vs ?? "", norm(t.counterparty)].join("|");
+export const dedupeKey = (t: Tx): string => [t.date, t.amount.toFixed(2), (t.currency ?? "EUR").toUpperCase(), t.vs ?? "", norm(t.counterparty)].join("|");
+
+/** Voľnejší kľúč: rovnaký dátum a suma (rôzne formáty výpisu môžu inak zapísať protistranu či VS). */
+export const looseKey = (t: Tx): string => [t.date, t.amount.toFixed(2), (t.currency ?? "EUR").toUpperCase()].join("|");
 
 /**
- * Pridá nové transakcie k existujúcim; tie, ktorých kľúč (dátum+suma+VS+protistrana) už
- * v existujúcich je (prekrývajúce sa výpisy), preskočí. Duplicity v rámci jedného výpisu ostávajú.
+ * Pridá nové transakcie k existujúcim (prekrývajúce sa výpisy). Párovanie je po kusoch:
+ * ak je rovnaký pohyb v existujúcich 2× a v novom výpise 3×, pridá sa 1.
+ * Pohyb s rovnakým dátumom a sumou, ale inou protistranou/VS, ako nespárovaný existujúci,
+ * sa pridá s označením `possibleDuplicate` (UI ho predvolene nezapočíta).
+ * Duplicity v rámci jedného výpisu ostávajú (môžu to byť dve skutočné platby).
  */
-export function mergeTxs(existing: Tx[], incoming: Tx[]): { txs: Tx[]; added: number; skipped: number } {
-  const seen = new Set(existing.map(dedupeKey));
-  const added = incoming.filter((t) => !seen.has(dedupeKey(t)));
-  return { txs: [...existing, ...added], added: added.length, skipped: incoming.length - added.length };
+export function mergeTxs(existing: Tx[], incoming: Tx[]): { txs: Tx[]; added: number; skipped: number; suspect: number } {
+  const strict = new Map<string, number>();
+  const loose = new Map<string, number>();
+  const inc = (m: Map<string, number>, k: string, d: number) => m.set(k, (m.get(k) ?? 0) + d);
+  for (const t of existing) {
+    inc(strict, dedupeKey(t), 1);
+    inc(loose, looseKey(t), 1);
+  }
+  const added: Tx[] = [];
+  let suspect = 0;
+  for (const t of incoming) {
+    const k = dedupeKey(t);
+    const lk = looseKey(t);
+    if ((strict.get(k) ?? 0) > 0) {
+      inc(strict, k, -1);
+      inc(loose, lk, -1);
+      continue;
+    }
+    if ((loose.get(lk) ?? 0) > 0) {
+      inc(loose, lk, -1);
+      suspect++;
+      added.push({ ...t, possibleDuplicate: true });
+    } else added.push(t);
+  }
+  return { txs: [...existing, ...added], added: added.length, skipped: incoming.length - added.length, suspect };
 }
 
 let counter = 0;

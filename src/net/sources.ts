@@ -1,8 +1,9 @@
 // Konektory na verejné zdroje.
 
-import type { ParamSet, YearParams } from "../params/types";
+import type { ParamSet } from "../params/types";
 import type { Company } from "../store/storage";
 import { netFetch } from "./net";
+import { validateParamSet } from "../params/validate";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -141,12 +142,12 @@ export async function fetchParamsUpdate(url: string): Promise<ParamsUpdate> {
   });
   if (!res.ok) throw new Error(`Súbor so sadzbami sa nepodarilo stiahnuť (${res.status}).`);
   const json = await res.json();
-  const years: ParamSet = json?.years ?? json;
-  for (const [k, v] of Object.entries(years)) {
-    const y = v as YearParams;
-    if (Number(k) !== y?.year || !y.sp || !y.zp) throw new Error(`Neplatný formát sadzieb pre rok ${k}.`);
-  }
-  return { publishedAt: json?.publishedAt, years };
+  const years: unknown = json?.years ?? json;
+  // podrobná kontrola (sumy, sadzby, pásma, dátumy) ešte pred ponúknutím na prijatie
+  const problems = validateParamSet(years);
+  if (problems.length > 0) throw new Error(`Stiahnuté sadzby sú neplatné, appka ich neprijme:\n${problems.join("\n")}`);
+  const publishedAt = typeof json?.publishedAt === "string" && /^\d{4}-\d{2}-\d{2}/.test(json.publishedAt) ? json.publishedAt : undefined;
+  return { publishedAt, years: years as ParamSet };
 }
 
 export interface ReleaseInfo {

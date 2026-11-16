@@ -1,9 +1,14 @@
 import { useState } from "react";
 import { CATEGORY_LABEL, type Category, type ClassifiedTx } from "../../bank/types";
 import { eur } from "../../engine/money";
+import { isEur } from "../../bank/aggregate";
+
+/** suma v mene pohybu (cudzia mena sa nezapočítava) */
+const money = (t: ClassifiedTx) =>
+  isEur(t) ? eur(t.amount) : `${t.amount.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${t.currency!.toUpperCase()}`;
 import { skDate } from "../format";
 
-type Filter = "all" | Category | "outside";
+type Filter = "all" | Category | "outside" | "dup";
 
 interface Props {
   txs: ClassifiedTx[];
@@ -20,7 +25,15 @@ export function ReviewTable({ txs, year, touched, onCategory, onRemember }: Prop
   const [filter, setFilter] = useState<Filter>("all");
   const inYear = txs.filter((t) => Number(t.date.slice(0, 4)) === year);
   const outside = txs.length - inYear.length;
-  const shown = filter === "outside" ? txs.filter((t) => Number(t.date.slice(0, 4)) !== year) : filter === "all" ? inYear : inYear.filter((t) => t.category === filter);
+  const dups = txs.filter((t) => t.possibleDuplicate);
+  const shown =
+    filter === "outside"
+      ? txs.filter((t) => Number(t.date.slice(0, 4)) !== year)
+      : filter === "dup"
+        ? dups
+        : filter === "all"
+          ? inYear
+          : inYear.filter((t) => t.category === filter);
   const count = (c: Category) => inYear.filter((t) => t.category === c).length;
 
   const tab = (f: Filter, label: string) => (
@@ -35,6 +48,7 @@ export function ReviewTable({ txs, year, touched, onCategory, onRemember }: Prop
         {tab("all", `Všetko (${inYear.length})`)}
         {CATS.map((c) => tab(c, `${CATEGORY_LABEL[c]} (${count(c)})`))}
         {outside > 0 && tab("outside", `Mimo roka ${year} (${outside})`)}
+        {dups.length > 0 && tab("dup", `Možné duplicity (${dups.length})`)}
       </div>
       {shown.length === 0 ? (
         <p className="note">Žiadne transakcie v tomto zobrazení.</p>
@@ -61,7 +75,10 @@ export function ReviewTable({ txs, year, touched, onCategory, onRemember }: Prop
                   </td>
                   <td className="mono bank-iban">{t.iban ?? ""}</td>
                   <td>{t.vs ?? ""}</td>
-                  <td className={`r ${t.amount < 0 ? "bank-neg" : "bank-pos"}`}>{eur(t.amount)}</td>
+                  <td className={`r ${t.amount < 0 ? "bank-neg" : "bank-pos"}`}>
+                    {money(t)}
+                    {!isEur(t) && <div className="bank-sub">cudzia mena – nezapočíta sa</div>}
+                  </td>
                   <td>
                     <select aria-label="Kategória" value={t.category} onChange={(e) => onCategory(t, e.target.value as Category)}>
                       {CATS.map((c) => (

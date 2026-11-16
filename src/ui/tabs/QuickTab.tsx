@@ -11,7 +11,7 @@ import { StepsList } from "../StepsList";
 import { AssignNotice } from "../AssignNotice";
 import { filingHeadline } from "../FilingPanel";
 import { staircase } from "../quick";
-import { buildQuickInput, contributionLimits, contributionThresholds, incomeLimits, taxStartThreshold, SLIDER_STEP, sliderMax, toDetailedInput, withoutOwnContributions, type QuickState } from "../quick";
+import { buildQuickInput, contributionLimits, contributionThresholds, incomeLimits, taxStartThreshold, SLIDER_STEP, sliderMax, toDetailedInput, transferReport, type TransferReport, withoutOwnContributions, type QuickState } from "../quick";
 
 interface Props {
   quick: NonNullable<AppData["quick"]>;
@@ -20,6 +20,8 @@ interface Props {
   years: number[];
   lastInput: CalcInput | undefined;
   onDetailed: (i: CalcInput) => void;
+  /** prejsť na Výpočet bez zmeny údajov */
+  onOpenDetailed: () => void;
 }
 
 const REGIME = { standard: "", mikro: "mikroodvod", none: "nie ste povinne poistený", unknown: "" } as const;
@@ -32,7 +34,8 @@ const Stat = ({ label, value, sub, tone }: { label: string; value: string; sub?:
   </div>
 );
 
-export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed }: Props) {
+export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed, onOpenDetailed }: Props) {
+  const [transfer, setTransfer] = useState<TransferReport | null>(null);
   // plynulé ťahanie slidera: výpočet beží s oneskorenou hodnotou
   const dq = useDeferredValue(quick);
 
@@ -277,8 +280,77 @@ export function QuickTab({ quick, onQuick, params, years, lastInput, onDetailed 
       <StepsList result={result} input={buildQuickInput(dq, dq.expenses !== null)} update={() => undefined} readOnly cardId="card-quick-steps" defaultOpen={false} />
 
       <div className="quick-actions">
-        <button type="button" onClick={() => onDetailed(toDetailedInput(quick, lastInput))}>Podrobný výpočet →</button>
+        <button
+          type="button"
+          onClick={() => {
+            const r = transferReport(quick, lastInput);
+            if (r.overwritten.length > 0 || r.kept.length > 0) setTransfer(r);
+            else onDetailed(toDetailedInput(quick, lastInput));
+          }}
+        >
+          Podrobný výpočet →
+        </button>
       </div>
+      {transfer && (
+        <div className="box warn" role="alert">
+          <p style={{ margin: "0 0 6px" }}>
+            <strong>Máte rozpracovaný podrobný výpočet.</strong> Ako ho chcete použiť?
+          </p>
+          {transfer.overwritten.length > 0 && (
+            <>
+              <p style={{ margin: "0 0 4px" }}>Prenos prepíše:</p>
+              <ul style={{ margin: "0 0 8px" }}>
+                {transfer.overwritten.map((l) => (
+                  <li key={l}>{l}</li>
+                ))}
+              </ul>
+            </>
+          )}
+          {transfer.kept.length > 0 && (
+            <>
+              <p style={{ margin: "0 0 4px" }}>Zostane z rozpracovaného výpočtu a výsledok sa bude líšiť od rýchleho:</p>
+              <ul style={{ margin: "0 0 8px" }}>
+                {transfer.kept.map((l) => (
+                  <li key={l}>{l}</li>
+                ))}
+              </ul>
+            </>
+          )}
+          <div className="row" style={{ flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={() => {
+                setTransfer(null);
+                onDetailed(buildQuickInput(quick));
+              }}
+            >
+              Nový podrobný výpočet z týchto údajov
+            </button>
+            <button
+              type="button"
+              className="ghost"
+              onClick={() => {
+                setTransfer(null);
+                onDetailed(toDetailedInput(quick, lastInput));
+              }}
+            >
+              Použiť na rozpracovaný výpočet
+            </button>
+            <button
+              type="button"
+              className="ghost"
+              onClick={() => {
+                setTransfer(null);
+                onOpenDetailed();
+              }}
+            >
+              Otvoriť podrobný bez prenosu
+            </button>
+            <button type="button" className="ghost" onClick={() => setTransfer(null)}>Zrušiť</button>
+          </div>
+          <p className="note small" style={{ margin: "8px 0 0" }}>Nový výpočet nahradí rozpracovaný (uložené výpočty v Histórii sa nezmenia) a zhodne sa s Rýchlym výpočtom.</p>
+        </div>
+      )}
     </main>
   );
 }

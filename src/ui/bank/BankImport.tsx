@@ -10,6 +10,9 @@ import { MappingStep } from "./MappingStep";
 import { ReviewTable } from "./ReviewTable";
 import { SummaryStep } from "./SummaryStep";
 import "./bank.css";
+import { requestFeedback } from "../../feedback/FeedbackDialog";
+
+const DUP_REASON = "Možná duplicita – rovnaký dátum a suma ako v inom výpise. Ak ide o inú platbu, zmeňte kategóriu.";
 
 export interface BankImportProps {
   input: CalcInput;
@@ -34,7 +37,11 @@ export function BankImport({ input, rules, onRulesChange, onApply, onClose, open
   const [opts, setOpts] = useState<ApplyOpts>({ income: true, sp: true, zp: true });
 
   const classified: ClassifiedTx[] = useMemo(
-    () => classify(txs, rules, { ownIban, ownerName }).map((t) => (overrides[t.id] ? { ...t, category: overrides[t.id], reason: "Ručne zmenené" } : t)),
+    () =>
+      classify(txs, rules, { ownIban, ownerName })
+        // možná duplicita z iného výpisu → predvolene nezapočítať (používateľ ju môže zaradiť ručne)
+        .map((t) => (t.possibleDuplicate ? { ...t, category: "ine" as Category, reason: DUP_REASON } : t))
+        .map((t) => (overrides[t.id] ? { ...t, category: overrides[t.id], reason: "Ručne zmenené" } : t)),
     [txs, rules, ownIban, ownerName, overrides],
   );
   const agg = useMemo(() => aggregate(classified, input.year), [classified, input.year]);
@@ -45,7 +52,10 @@ export function BankImport({ input, rules, onRulesChange, onApply, onClose, open
     setTxs(r.txs);
     setFiles((f) => [...f, name]);
     setWarnings((w) => [...w, ...extraWarnings.map((x) => `${name}: ${x}`)]);
-    setInfo(`${name}: pridaných ${r.added} transakcií${r.skipped ? `, ${r.skipped} už bolo načítaných (preskočené)` : ""}.`);
+    setInfo(
+      `${name}: pridaných ${r.added} transakcií${r.skipped ? `, ${r.skipped} už bolo načítaných (preskočené)` : ""}.` +
+        (r.suspect ? ` ${r.suspect} vyzerá ako možná duplicita (rovnaký dátum a suma ako v inom výpise) – nezapočítané, skontrolujte ich v zobrazení „Možné duplicity“.` : ""),
+    );
   };
 
   const chooseFile = async () => {
@@ -122,7 +132,14 @@ export function BankImport({ input, rules, onRulesChange, onApply, onClose, open
         {busy && <p className="note" role="status">Spracúvam výpis…</p>}
         {files.length > 0 && <p className="note small">Načítané súbory: {files.join(", ")}</p>}
         {info && <p className="good-text" role="status">{info}</p>}
-        {error && <div className="bank-msg err" role="alert">{error}</div>}
+        {error && (
+          <div className="bank-msg err" role="alert">
+            {error}{" "}
+            <button type="button" className="link-btn" onClick={() => requestFeedback({ kind: "data", origin: "Chyba importu výpisu", error })}>
+              Nahlásiť tento problém
+            </button>
+          </div>
+        )}
         {warnings.length > 0 && (
           <div className="bank-msg" role="status">
             Niektoré riadky sa nepodarilo spracovať – skontrolujte ich vo výpise ručne:
@@ -142,6 +159,8 @@ export function BankImport({ input, rules, onRulesChange, onApply, onClose, open
             <ReviewTable txs={classified} year={input.year} touched={touched} onCategory={setCategory} onRemember={remember} />
             <SummaryStep
               agg={agg}
+              year={input.year}
+              annualIncome={input.income.mode === "annual"}
               opts={opts}
               onOpts={setOpts}
               empty={txs.length === 0}

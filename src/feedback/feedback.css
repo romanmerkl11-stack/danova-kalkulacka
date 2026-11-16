@@ -1,0 +1,8 @@
+/* Spätná väzba */
+.fb-dialog { max-width: 640px; max-height: calc(100vh - 32px); overflow-y: auto; }
+.fb-dialog textarea { width: 100%; resize: vertical; font: inherit; }
+.fb-amounts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 560px) { .fb-amounts { grid-template-columns: 1fr; } }
+.fb-preview { white-space: pre-wrap; word-break: break-word; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; max-height: 45vh; overflow-y: auto; font-size: 0.85rem; }
+.app-header { position: relative; }
+.feedback-link { position: absolute; top: 14px; right: 20px; font-size: 0.85rem; }

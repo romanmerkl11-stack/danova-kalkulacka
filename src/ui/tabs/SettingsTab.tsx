@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { NetDenied, SOURCE_LABELS } from "../../net/net";
 import { checkAppUpdate, type ReleaseInfo } from "../../net/sources";
-import { isTauri, normalize, openFile, saveFileAs, type AppData, type Settings, type SourceId } from "../../store/storage";
+import { isTauri, makeBackup, openFile, parseBackup, saveFileAs, saveSafetyCopy, type AppData, type Settings, type SourceId } from "../../store/storage";
 import { APP_VERSION, isNewerVersion } from "../../version";
 import { skDateTime } from "../format";
 import { cardDef, resolveLayout } from "../calcLayout";
@@ -9,7 +9,8 @@ import { cardDef, resolveLayout } from "../calcLayout";
 interface Props {
   data: AppData;
   setData: (fn: (d: AppData) => AppData) => void;
-  onReplaceData: (d: AppData) => void;
+  /** nahradí všetky dáta a uloží ich; true = zápis potvrdený */
+  onReplaceData: (d: AppData) => Promise<boolean>;
 }
 
 const RESULT_LABEL = { ok: "v poriadku", chyba: "chyba", zamietnuté: "zamietnuté" } as const;
@@ -31,13 +32,14 @@ export function SettingsTab({ data, setData, onReplaceData }: Props) {
 
   const [backupMsg, setBackupMsg] = useState<string | null>(null);
   const [restore, setRestore] = useState<AppData | null>(null);
+  const [restoring, setRestoring] = useState(false);
   const [upd, setUpd] = useState<{ busy: boolean; msg?: string; release?: ReleaseInfo | null; checked?: boolean }>({ busy: false });
 
   const backup = async () => {
     setBackupMsg(null);
     try {
       const name = `danova-kalkulacka-zaloha-${new Date().toISOString().slice(0, 10)}.json`;
-      const ok = await saveFileAs(name, JSON.stringify(data, null, 1), "Záloha", "json");
+      const ok = await saveFileAs(name, makeBackup(data), "Záloha", "json");
       setBackupMsg(ok ? "Záloha uložená." : "Ukladanie zrušené.");
     } catch (e) {
       setBackupMsg(`Zálohu sa nepodarilo uložiť: ${e instanceof Error ? e.message : String(e)}`);
@@ -50,11 +52,15 @@ export function SettingsTab({ data, setData, onReplaceData }: Props) {
     try {
       const f = await openFile("Záloha", ["json"]);
       if (!f) return;
-      const raw = JSON.parse(new TextDecoder().decode(f.bytes));
-      if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("neplatný formát");
-      setRestore(normalize(raw));
+      let raw: unknown;
+      try {
+        raw = JSON.parse(new TextDecoder().decode(f.bytes));
+      } catch {
+        throw new Error("Súbor nie je záloha Daňovej kalkulačky.");
+      }
+      setRestore(parseBackup(raw));
     } catch (e) {
-      setBackupMsg(`Súbor sa nepodarilo načítať ako zálohu: ${e instanceof Error ? e.message : String(e)}`);
+      setBackupMsg(`Zálohu nemožno obnoviť: ${e instanceof Error ? e.message : String(e)} Súčasné dáta sa nezmenili.`);
     }
   };
 
@@ -191,15 +197,34 @@ export function SettingsTab({ data, setData, onReplaceData }: Props) {
         {restore && (
           <div className="box warn" role="alert" style={{ marginTop: 12 }}>
             <p style={{ margin: "0 0 8px" }}>
-              Záloha obsahuje {restore.calcs.length} výpočtov a {restore.companies.length} firiem. Obnovením sa nahradia všetky súčasné dáta v appke.
+              Záloha obsahuje {restore.calcs.length} výpočtov a {restore.companies.length} firiem. Obnovením sa nahradia všetky súčasné dáta v appke – predtým sa automaticky uloží ich bezpečnostná kópia.
             </p>
             <div className="row">
               <button
                 type="button"
-                onClick={() => {
-                  onReplaceData(restore);
-                  setRestore(null);
-                  setBackupMsg("Dáta boli obnovené zo zálohy.");
+                disabled={restoring}
+                onClick={async () => {
+                  setRestoring(true);
+                  try {
+                    // bezpečnostná kópia súčasných dát – bez nej sa neobnovuje
+                    let where: string;
+                    try {
+                      where = await saveSafetyCopy(data);
+                    } catch (e) {
+                      setBackupMsg(`Bezpečnostnú kópiu súčasných dát sa nepodarilo uložiť (${e instanceof Error ? e.message : String(e)}). Obnova zrušená, dáta sa nezmenili.`);
+                      setRestore(null);
+                      return;
+                    }
+                    const ok = await onReplaceData(restore);
+                    setRestore(null);
+                    setBackupMsg(
+                      ok
+                        ? `Dáta boli obnovené zo zálohy. Predchádzajúce dáta sú uložené ${where}.`
+                        : `Dáta sú obnovené v aplikácii, ale nepodarilo sa ich uložiť. Predchádzajúce dáta sú uložené ${where}.`,
+                    );
+                  } finally {
+                    setRestoring(false);
+                  }
                 }}
               >
                 Nahradiť súčasné dáta

@@ -14,6 +14,8 @@ export interface Tx {
   ss?: string;
   description?: string;
   raw: string;
+  /** rovnaký dátum a suma ako pohyb z iného výpisu, ale iná protistrana/VS – možno ten istý pohyb */
+  possibleDuplicate?: boolean;
 }
 
 export type Category = "prijem" | "sp" | "zp" | "ine";

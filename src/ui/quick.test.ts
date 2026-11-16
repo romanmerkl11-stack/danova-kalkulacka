@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { calculate, defaultInput } from "../engine/calc";
-import { buildQuickInput, incomeLimits, sliderMax, toDetailedInput } from "./quick";
+import { buildQuickInput, incomeLimits, sliderMax, toDetailedInput, transferReport } from "./quick";
 
 describe("rýchly výpočet", () => {
   it("automatické výdavky: bez prepisu", () => {
@@ -95,5 +95,62 @@ describe("staircase – schody popiskov limitov", () => {
   it("v skupine blízkych značiek je prvá najnižšie, ďalšie vyššie; vzdialené na stupni 0", async () => {
     const { staircase } = await import("./quick");
     expect(staircase([10, 20, 30, 200, 300, 310], 40)).toEqual([2, 1, 0, 0, 1, 0]);
+  });
+});
+
+describe("F09 – čo prenos do podrobného výpočtu prepíše a čo zostane", () => {
+  const q = { year: 2026, income: 30000, expenses: null };
+  const none = { overwritten: [], kept: [] };
+  it("bez rozpracovaného alebo s nedotknutým výpočtom sa netreba pýtať", () => {
+    expect(transferReport(q, undefined)).toEqual(none);
+    expect(transferReport(q, defaultInput(2026))).toEqual(none);
+    expect(transferReport(q, defaultInput(2025))).toEqual(none);
+  });
+  it("iný rok s rozpracovanými údajmi", () => {
+    const last = defaultInput(2025);
+    last.dds = 100;
+    expect(transferReport(q, last).overwritten).toEqual(["celý rozpracovaný výpočet za rok 2025 (prepne sa na rok 2026)"]);
+  });
+  it("prepíše mesačné príjmy, zamestnávateľov, ručné odvody a výdavky", () => {
+    const last = defaultInput(2026);
+    last.income.mode = "monthly";
+    last.income.monthly[0] = 1000;
+    last.employment.items = [
+      { name: "A", gross: 1, insurance: 0, taxWithheld: 0, bonusPaid: 0 },
+      { name: "B", gross: 1, insurance: 0, taxWithheld: 0, bonusPaid: 0 },
+    ];
+    last.insurance.zpMonthlyAmount = 150;
+    last.overrides = { vydavky: 5000 };
+    expect(transferReport({ ...q, profile: "oboje" }, last).overwritten).toEqual([
+      "príjmy zadané po mesiacoch (prepnú sa na ročnú sumu)",
+      "zoznam 2 zamestnávateľov",
+      "ručne zadané mesačné odvody",
+      "ručne zadané výdavky",
+    ]);
+    expect(transferReport({ ...q, zp: 150, expenses: 5000 }, last).overwritten).toEqual(["príjmy zadané po mesiacoch (prepnú sa na ročnú sumu)"]);
+  });
+  it("príklad z auditu: skutočné výdavky a ručne prepísaná daň zostanú → treba upozorniť", () => {
+    const last = defaultInput(2026);
+    last.expenses = { mode: "actual", actual: 10000 };
+    last.overrides = { dan: 42 };
+    const r = transferReport(q, last);
+    expect(r.kept).toEqual(["ručný prepis medzivýsledku v Postupe výpočtu", "skutočné výdavky namiesto paušálu"]);
+    // prenos do rozpracovaného výpočtu sa líši od rýchleho, nový výpočet sa zhoduje
+    const quickTax = calculate(buildQuickInput(q)).summary.tax;
+    expect(calculate(toDetailedInput(q, last)).summary.tax).not.toBe(quickTax);
+    expect(calculate(buildQuickInput(q)).summary.tax).toBe(quickTax);
+  });
+  it("deti, manžel/ka, preddavky, poistné po mesiacoch", () => {
+    const last = defaultInput(2026);
+    last.children = [{ name: "A", birth: "2020-01" }];
+    last.spouse.claim = true;
+    last.taxAdvancesPaid = 100;
+    last.insurance.spPaid[0] = 300;
+    expect(transferReport(q, last).kept).toEqual([
+      "ručne upravené mesiace zaplateného poistného",
+      "dieťa (daňový bonus)",
+      "nezdaniteľná časť na manžela/manželku",
+      "zaplatené preddavky na daň",
+    ]);
   });
 });

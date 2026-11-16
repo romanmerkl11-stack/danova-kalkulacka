@@ -1,6 +1,7 @@
 import { defaultInput, MONTHS } from "../engine/calc";
 import type { CalcInput } from "../engine/types";
-import { PARAMS } from "../params/data";
+import type { ParamSet } from "../params/types";
+import { taxParamsFor } from "../engine/calc";
 import type { Company } from "../store/storage";
 import { Card } from "./Card";
 import { CompanyBox } from "./CompanyBox";
@@ -10,6 +11,7 @@ import { ExpenseRows } from "./ExpenseRows";
 import { expenseTotal } from "./expenseItems";
 import { NumberInput } from "./NumberInput";
 import { eur } from "../engine/money";
+import { formatSkNumber } from "./format";
 
 const fmt = (v: number | undefined) => (v === undefined ? "–" : eur(v));
 
@@ -23,11 +25,15 @@ interface Props {
   onIco: (ico: string) => void;
   company: Company | null;
   onFound: (c: Company) => void;
+  /** sadzby, s ktorými sa naozaj počíta (zabalené + prijaté) */
+  params: ParamSet;
 }
 
-const YEARS = Object.keys(PARAMS).map(Number).sort((a, b) => a - b);
-
-export function InputsPanel({ nickname, onNickname, input, update, replaceInput, ico, onIco, company, onFound }: Props) {
+export function InputsPanel({ nickname, onNickname, input, update, replaceInput, ico, onIco, company, onFound, params }: Props) {
+  // roky a texty zo skutočne použitých sadzieb (aj prijatý nový rok)
+  const YEARS = Object.keys(params).map(Number).sort((a, b) => a - b);
+  const T = taxParamsFor(input.year, params).tax;
+  const pct = (r: number) => `${Math.round(r * 1000) / 10} %`.replace(".", ",");
   const reset = () => {
     if (window.confirm("Naozaj chcete vynulovať všetky vstupy?")) replaceInput({ ...defaultInput(input.year), profile: input.profile ?? "szco" });
   };
@@ -87,7 +93,7 @@ export function InputsPanel({ nickname, onNickname, input, update, replaceInput,
         <fieldset>
           <legend>Výdavky</legend>
           <div className="radio-row">
-            <label className="check"><input type="radio" name="emode" checked={input.expenses.mode === "pausal"} onChange={() => update((d) => void (d.expenses.mode = "pausal"))} /> Paušálne (60 %, max 20 000 €)</label>
+            <label className="check"><input type="radio" name="emode" checked={input.expenses.mode === "pausal"} onChange={() => update((d) => void (d.expenses.mode = "pausal"))} /> Paušálne ({pct(T.pausalRate)}, max {formatSkNumber(T.pausalCap.value)} €)</label>
             <label className="check"><input type="radio" name="emode" checked={input.expenses.mode === "actual"} onChange={() => update((d) => void (d.expenses.mode = "actual"))} /> Skutočné</label>
           </div>
           {input.expenses.mode === "actual" && (
@@ -140,7 +146,7 @@ export function InputsPanel({ nickname, onNickname, input, update, replaceInput,
             label={`Sociálne poistenie január – jún ${input.year}`}
             value={input.insurance.spJanJun}
             allowNull
-            placeholder={`min. ${fmt(PARAMS[input.year]?.sp.minPoistne.value)}`}
+            placeholder={`min. ${fmt(params[input.year]?.sp.minPoistne.value)}`}
             onChange={(v) => update((d) => void (d.insurance.spJanJun = v))}
           />
           <NumberInput
@@ -154,7 +160,7 @@ export function InputsPanel({ nickname, onNickname, input, update, replaceInput,
             label={`Zdravotné poistenie mesačne ${input.year}`}
             value={input.insurance.zpMonthlyAmount}
             allowNull
-            placeholder={`min. ${fmt(PARAMS[input.year]?.zp.minPreddavok.value)}`}
+            placeholder={`min. ${fmt(params[input.year]?.zp.minPreddavok.value)}`}
             onChange={(v) => update((d) => void (d.insurance.zpMonthlyAmount = v))}
           />
         </fieldset>

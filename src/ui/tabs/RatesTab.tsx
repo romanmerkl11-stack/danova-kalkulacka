@@ -161,7 +161,7 @@ export function RatesTab({ data, setData, params, defaultYear, update, setUpdate
           <button type="button" onClick={check} disabled={unconfigured || busy}>{busy ? "Kontrolujem…" : "Skontrolovať nové sadzby"}</button>
         </div>
         {unconfigured && <p className="note small warn-text">Adresa súboru sadzieb ešte nie je nastavená (Nastavenia).</p>}
-        {msg && <p className="note warn-text" role="alert">{msg}</p>}
+        {msg && <p className="note warn-text" role="alert" style={{ whiteSpace: "pre-line" }}>{msg}</p>}
         {accepted && <p className="good-text" role="status">{accepted}</p>}
         {update && (
           <div>

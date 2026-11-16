@@ -1,12 +1,17 @@
 import { openExternal } from "./net/open";
 import { ProfileTitle } from "./ui/ProfileSwitch";
-import { effectiveParams } from "./params/merge";
+import { effectiveParams, paramsDateFor } from "./params/merge";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { calculate, defaultInput } from "./engine/calc";
 import type { CalcInput } from "./engine/types";
 import { setNetContext, type Decision, type NetRequest } from "./net/net";
+import { createAskQueue } from "./net/askQueue";
 import { PARAMS } from "./params/data";
-import { isTauri, loadData, saveData, type AppData, type Company, type SavedCalc } from "./store/storage";
+import { isTauri, loadData, makeBackup, resolveCorrupt, saveData, saveDataSyncWeb, saveFileAs, type AppData, type Company, type LoadResult, type SavedCalc } from "./store/storage";
+import { RecoveryScreen } from "./ui/RecoveryScreen";
+import { FEEDBACK_EVENT, FeedbackDialog, requestFeedback, type FeedbackRequest } from "./feedback/FeedbackDialog";
+import { newDraft, osName } from "./feedback/report";
+import { PROFILES } from "./ui/ProfileSwitch";
 import { fetchParamsUpdate, checkAppUpdate, type ParamsUpdate, type ReleaseInfo } from "./net/sources";
 import { diffYears } from "./params/flatten";
 import { PermissionDialog } from "./ui/PermissionDialog";
@@ -28,10 +33,6 @@ const MIN_YEAR = Math.min(...years);
 const MAX_YEAR = Math.max(...years);
 const startYear = () => Math.min(MAX_YEAR, Math.max(MIN_YEAR, new Date().getFullYear()));
 
-interface Pending {
-  req: NetRequest;
-  resolve: (d: Decision) => void;
-}
 
 export default function App() {
   const [data, setData] = useState<AppData | null>(null);
@@ -44,9 +45,21 @@ export default function App() {
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [appRelease, setAppRelease] = useState<ReleaseInfo | null>(null);
   const startupRef = useRef(false);
-  const [pending, setPending] = useState<Pending | null>(null);
+  // otázky na povolenie internetu idú cez front – zobrazí sa vždy jedna
+  const [pendingReq, setPendingReq] = useState<NetRequest | null>(null);
+  const askQueue = useMemo(() => createAskQueue(setPendingReq), []);
   const dataRef = useRef<AppData | null>(null);
   const loadedRef = useRef(false);
+  // ochrana dát: poškodené dáta → obrazovka obnovy; stav zápisu
+  const [corrupt, setCorrupt] = useState<Extract<LoadResult, { status: "corrupt" }> | null>(null);
+  const [saveErr, setSaveErr] = useState<string | null>(null);
+  // spätná väzba: otvorené okno + chyba, z ktorej sa otvorilo
+  const [feedback, setFeedback] = useState<FeedbackRequest | null>(null);
+  const timerRef = useRef<number | null>(null);
+  /** dáta sa zmenili a ešte nie sú potvrdene zapísané */
+  const dirtyRef = useRef(false);
+  /** posledné dáta odoslané na zápis (aby sa neukladali dvakrát) */
+  const lastSavedRef = useRef<AppData | null>(null);
 
   // desktop: odkazy na web (target=_blank) otvoriť v predvolenom prehliadači, nie vo vnútri appky
   useEffect(() => {
@@ -62,10 +75,14 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    loadData().then((d) => {
-      dataRef.current = d;
-      setIcoState(d.lastIco ?? "");
-      setData(d);
+    loadData().then((r) => {
+      if (r.status === "corrupt") {
+        setCorrupt(r);
+        return;
+      }
+      dataRef.current = r.data;
+      setIcoState(r.data.lastIco ?? "");
+      setData(r.data);
     });
   }, []);
 
@@ -80,23 +97,118 @@ export default function App() {
     if (!ready) return;
     setNetContext({
       getSettings: () => dataRef.current!.settings,
-      ask: (req) => new Promise<Decision>((resolve) => setPending({ req, resolve })),
+      ask: askQueue.ask,
       onAlwaysAllow: (source) =>
         setData((d) => (d ? { ...d, settings: { ...d.settings, alwaysAllow: { ...d.settings.alwaysAllow, [source]: true } } } : d)),
       log: (entry) => setData((d) => (d ? { ...d, netLog: [...d.netLog, entry].slice(-500) } : d)),
     });
   }, [ready]);
 
+  /** Zapíše dáta hneď; vráti true až po potvrdenom zápise. Chyba sa ukáže v pruhu hore. */
+  const persist = useCallback(async (d: AppData): Promise<boolean> => {
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    lastSavedRef.current = d;
+    dirtyRef.current = true;
+    try {
+      await saveData(d);
+      if (dataRef.current === d) dirtyRef.current = false;
+      setSaveErr(null);
+      return true;
+    } catch (e) {
+      setSaveErr(e instanceof Error ? e.message : String(e));
+      return false;
+    }
+  }, []);
+
   // ukladanie s oneskorením
   useEffect(() => {
     if (!data) return;
     if (!loadedRef.current) {
       loadedRef.current = true;
+      lastSavedRef.current = data;
       return;
     }
-    const t = window.setTimeout(() => void saveData(data), 500);
-    return () => window.clearTimeout(t);
-  }, [data]);
+    if (data === lastSavedRef.current) return;
+    dirtyRef.current = true;
+    timerRef.current = window.setTimeout(() => {
+      timerRef.current = null;
+      void persist(data);
+    }, 500);
+    return () => {
+      if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    };
+  }, [data, persist]);
+
+  // „Nahlásiť tento problém“ odkiaľkoľvek v appke
+  useEffect(() => {
+    const on = (e: Event) => {
+      const r = (e as CustomEvent<FeedbackRequest>).detail ?? {};
+      setData((d) => {
+        if (!d) return d;
+        // rozpísaný koncept sa nezahodí; nový sa založí len keď žiadny nie je
+        const draft = d.feedbackDraft && d.feedbackDraft.what.trim() !== "" ? d.feedbackDraft : newDraft(r.kind ?? "problem", r.origin);
+        return { ...d, feedbackDraft: draft };
+      });
+      setFeedback(r);
+    };
+    window.addEventListener(FEEDBACK_EVENT, on);
+    return () => window.removeEventListener(FEEDBACK_EVENT, on);
+  }, []);
+
+  // pri zatváraní neprísť o posledné zmeny
+  useEffect(() => {
+    if (isTauri()) {
+      let unlisten: (() => void) | undefined;
+      let disposed = false;
+      void import("@tauri-apps/api/window").then(async ({ getCurrentWindow }) => {
+        const f = await getCurrentWindow().onCloseRequested(async (ev) => {
+          const d = dataRef.current;
+          if (!d || !dirtyRef.current) return; // nič neuložené → zavrie sa
+          if (await persist(d)) return;
+          const { ask } = await import("@tauri-apps/plugin-dialog");
+          const close = await ask("Posledné zmeny sa nepodarilo uložiť. Zavrieť aplikáciu aj tak? Neuložené zmeny sa stratia.", {
+            title: "Daňová kalkulačka",
+            kind: "warning",
+            okLabel: "Zavrieť",
+            cancelLabel: "Nezatvárať",
+          });
+          if (!close) ev.preventDefault();
+        });
+        if (disposed) f();
+        else unlisten = f;
+      });
+      return () => {
+        disposed = true;
+        unlisten?.();
+      };
+    }
+    const flush = () => {
+      if (timerRef.current === null || !dataRef.current) return;
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+      lastSavedRef.current = dataRef.current;
+      if (saveDataSyncWeb(dataRef.current)) dirtyRef.current = false;
+    };
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      flush();
+      if (dirtyRef.current) e.preventDefault(); // prehliadač sa opýta, či odísť
+    };
+    const onHidden = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onHidden);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onHidden);
+    };
+  }, [persist]);
 
   // jednorazové kontroly po načítaní (podľa nastavení; sieťová vrstva sa pýta na povolenie)
   useEffect(() => {
@@ -162,8 +274,8 @@ export default function App() {
   const setNickname = (v: string) => setData((d) => (d ? { ...d, lastNickname: v } : d));
   const displayName = nickname.trim() || company?.name || "Bez mena";
 
-  const saveCalc = (title: string, asNew: boolean) => {
-    if (!input || !calc?.result) return;
+  const saveCalc = (title: string, asNew: boolean): Promise<boolean> => {
+    if (!data || !input || !calc?.result) return Promise.resolve(false);
     const r = calc.result.summary;
     const now = new Date().toISOString();
     const base = {
@@ -173,16 +285,25 @@ export default function App() {
       year: input.year,
       input: structuredClone(input),
       summary: { income: r.income, tax: r.tax, taxToPay: r.taxToPay, sp: r.sp, zp: r.zp, net: r.net },
+      // sadzby, s ktorými sa výpočet urobil (História ukáže, ak sa odvtedy zmenili)
+      params: params[input.year] ? structuredClone(params[input.year]) : undefined,
+      paramsNext: params[input.year + 1] ? structuredClone(params[input.year + 1]) : undefined,
+      appVersion: APP_VERSION,
+      paramsDate: paramsDateFor(input.year, data.acceptedParams, data.acceptedParamsDate),
       updatedAt: now,
     };
+    let next: AppData;
     if (!asNew && currentCalc) {
-      setData((d) => (d ? { ...d, calcs: d.calcs.map((c) => (c.id === currentCalc.id ? { ...c, ...base, title } : c)) } : d));
+      next = { ...data, calcs: data.calcs.map((c) => (c.id === currentCalc.id ? { ...c, ...base, title } : c)) };
     } else {
       const id = crypto.randomUUID();
       const saved: SavedCalc = { id, title, createdAt: now, ...base };
-      setData((d) => (d ? { ...d, calcs: [...d.calcs, saved] } : d));
+      next = { ...data, calcs: [...data.calcs, saved] };
       setCurrentCalcId(id);
     }
+    // uložiť hneď – „Uložené“ sa ukáže až po potvrdenom zápise
+    setData(next);
+    return persist(next);
   };
 
   const openCalc = (c: SavedCalc) => {
@@ -198,17 +319,40 @@ export default function App() {
     setCurrentCalcId(null);
   };
 
-  const replaceAllData = (d: AppData) => {
+  const replaceAllData = (d: AppData): Promise<boolean> => {
     setData(d);
     setIcoState(d.lastIco ?? "");
     setCurrentCalcId(null);
+    return persist(d);
   };
+
+  if (corrupt)
+    return (
+      <RecoveryScreen
+        info={corrupt}
+        onResolve={async (d) => {
+          await resolveCorrupt(corrupt.raw);
+          setCorrupt(null);
+          dataRef.current = d;
+          setIcoState(d.lastIco ?? "");
+          setData(d);
+          await persist(d);
+        }}
+      />
+    );
 
   if (!data || !input || !calc) return <div className="loading">Načítavam…</div>;
 
+  const backupNow = async () => {
+    try {
+      await saveFileAs(`danova-kalkulacka-zaloha-${new Date().toISOString().slice(0, 10)}.json`, makeBackup(data), "Záloha", "json");
+    } catch (e) {
+      setSaveErr(`zálohu sa nepodarilo uložiť: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
   const decide = (d: Decision) => {
-    pending?.resolve(d);
-    setPending(null);
+    askQueue.decide(d);
   };
 
   // profil (živnosť / zamestnanec / oboje) – spoločný pre obe záložky, určuje aj farebný akcent appky
@@ -231,6 +375,9 @@ export default function App() {
             )
           }
         />
+        <button type="button" className="link-btn feedback-link" onClick={() => requestFeedback()}>
+          {data.feedbackDraft?.what.trim() ? "Rozpísané hlásenie" : "Nahlásiť problém / návrh"}
+        </button>
         <button type="button" className="menu-btn" aria-expanded={menuOpen} aria-controls="main-tabs" onClick={() => setMenuOpen(!menuOpen)}>
           <span className="menu-icon" aria-hidden="true">☰</span>
           {tab}
@@ -261,6 +408,16 @@ export default function App() {
           <button type="button" className="icon ghost" onClick={() => setBannerDismissed(true)} aria-label="Zavrieť oznámenie">×</button>
         </div>
       )}
+      {saveErr && (
+        <div className="banner error" role="alert">
+          <span>
+            <strong>Zmeny sa nepodarilo uložiť</strong> ({saveErr}). Zatiaľ sú len v otvorenom okne – skúste to znova alebo si dáta zálohujte do súboru.
+          </span>
+          <button type="button" onClick={() => void persist(dataRef.current ?? data)}>Skúsiť znova</button>
+          <button type="button" className="ghost" onClick={() => void backupNow()}>Zálohovať do súboru</button>
+          <button type="button" className="link-btn" onClick={() => requestFeedback({ kind: "data", origin: "Chyba uloženia", error: saveErr })}>Nahlásiť tento problém</button>
+        </div>
+      )}
       {appRelease && (
         <div className="banner" role="status">
           <span>
@@ -276,13 +433,14 @@ export default function App() {
           quick={data.quick ?? { year: startYear(), income: 0, expenses: null }}
           onQuick={(q) => setData((d) => (d ? { ...d, quick: q } : d))}
           params={params}
-          years={years.slice().sort((a, b) => a - b)}
+          years={Object.keys(params).map(Number).sort((a, b) => a - b)}
           onDetailed={(i) => {
             setData((d) => (d ? { ...d, lastInput: i } : d));
             setCurrentCalcId(null);
             setTab("Výpočet");
           }}
           lastInput={data.lastInput}
+          onOpenDetailed={() => setTab("Výpočet")}
         />
       )}
       {tab === "Výpočet" && (
@@ -319,7 +477,28 @@ export default function App() {
 
       <PrintReport result={calc.result} input={input} title={currentCalc?.title ?? `Výpočet ${input.year}`} companyName={displayName} ico={ico} />
 
-      {pending && <PermissionDialog req={pending.req} onDecide={decide} />}
+      {feedback && data.feedbackDraft && (
+        <FeedbackDialog
+          draft={data.feedbackDraft}
+          context={{
+            appVersion: APP_VERSION,
+            platform: isTauri() ? "desktop" : "web",
+            os: osName(navigator.userAgent),
+            tab,
+            year: tab === "Rýchly výpočet" ? (data.quick?.year ?? input.year) : input.year,
+            profile: PROFILES.find((p) => p.id === profile)?.label ?? profile,
+            paramsDate: paramsDateFor(input.year, data.acceptedParams, data.acceptedParamsDate),
+            error: feedback.error,
+          }}
+          onDraft={(fd) => setData((d) => (d ? { ...d, feedbackDraft: fd } : d))}
+          onDone={() => {
+            setData((d) => (d ? { ...d, feedbackDraft: undefined } : d));
+            setFeedback(null);
+          }}
+          onClose={() => setFeedback(null)}
+        />
+      )}
+      {pendingReq && <PermissionDialog key={`${pendingReq.source}|${pendingReq.url}`} req={pendingReq} onDecide={decide} />}
     </div>
   );
 }

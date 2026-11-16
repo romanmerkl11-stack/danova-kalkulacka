@@ -98,6 +98,54 @@ export function toDetailedInput(q: QuickState, last: CalcInput | undefined): Cal
   return base;
 }
 
+export interface TransferReport {
+  /** čo prenos prepíše alebo zahodí v rozpracovanom podrobnom výpočte */
+  overwritten: string[];
+  /** čo z rozpracovaného výpočtu zostane a zmení výsledok oproti Rýchlemu výpočtu */
+  kept: string[];
+}
+
+/**
+ * Čo by prenos z Rýchleho výpočtu do rozpracovaného podrobného výpočtu prepísal a čo by z neho
+ * zostalo (a teda výsledok podrobného výpočtu by sa nezhodoval s rýchlym). Prázdne = netreba sa pýtať.
+ */
+export function transferReport(q: QuickState, last: CalcInput | undefined): TransferReport {
+  const none: TransferReport = { overwritten: [], kept: [] };
+  if (!last) return none;
+  if (last.year !== q.year) {
+    const untouched = JSON.stringify(last) === JSON.stringify(defaultInput(last.year));
+    return untouched ? none : { overwritten: [`celý rozpracovaný výpočet za rok ${last.year} (prepne sa na rok ${q.year})`], kept: [] };
+  }
+  const overwritten: string[] = [];
+  const kept: string[] = [];
+  const profile = q.profile ?? "szco";
+  const szco = profile !== "zamestnanec";
+  if (szco && last.income.mode === "monthly" && last.income.monthly.some((v) => v !== null && v !== 0))
+    overwritten.push("príjmy zadané po mesiacoch (prepnú sa na ročnú sumu)");
+  const emp = last.employment.items?.length ?? 0;
+  if (profile !== "szco" && emp > 0) overwritten.push(emp === 1 ? "údaje zamestnávateľa" : `zoznam ${emp} zamestnávateľov`);
+  if (profile === "zamestnanec" && (last.rental.items?.length ?? 0) > 0) overwritten.push("rozpis výdavkov z prenájmu");
+  const ins = last.insurance;
+  const manual = (a: number | null, b: number | null | undefined) => a !== null && a !== (b ?? null);
+  if (manual(ins.spJanJun, q.spH1) || manual(ins.spJulDec, q.spH2) || manual(ins.zpMonthlyAmount, q.zp)) overwritten.push("ručne zadané mesačné odvody");
+  if (last.overrides?.vydavky !== undefined && (q.expenses === null || !szco)) overwritten.push("ručne zadané výdavky");
+
+  // zostane a zmení výsledok
+  const steps = Object.keys(last.overrides ?? {}).filter((k) => k !== "vydavky").length;
+  if (steps > 0) kept.push(steps === 1 ? "ručný prepis medzivýsledku v Postupe výpočtu" : `ručné prepisy medzivýsledkov v Postupe výpočtu (${steps})`);
+  if (szco && last.expenses.mode === "actual" && q.expenses === null) kept.push("skutočné výdavky namiesto paušálu");
+  if (szco && (ins.spPaid.some((v) => v !== null) || ins.zpPaid.some((v) => v !== null))) kept.push("ručne upravené mesiace zaplateného poistného");
+  if (szco && ins.spRegimeH2 !== "standard") kept.push("režim sociálneho poistenia od júla");
+  if (last.children.length > 0) kept.push(last.children.length === 1 ? "dieťa (daňový bonus)" : `deti (${last.children.length}, daňový bonus)`);
+  if (last.spouse.claim) kept.push("nezdaniteľná časť na manžela/manželku");
+  if (last.dds > 0) kept.push("príspevky na DDS");
+  if (last.lossCarry > 0) kept.push("odpočet straty");
+  if (last.taxAdvancesPaid > 0) kept.push("zaplatené preddavky na daň");
+  if (profile !== "zamestnanec" && last.rental.income > 0) kept.push("príjmy z prenájmu");
+  if ((last.other?.items.length ?? 0) > 0) kept.push("ostatné príjmy (§ 8)");
+  return { overwritten, kept };
+}
+
 /** Príjem, pri ktorom čiastkový základ dane zo živnosti (czd6) dosiahne `targetZd` (binárne hľadanie; czd6 s príjmom neklesá). */
 function incomeForZd(q: QuickState, params: ParamSet, targetZd: number): number | null {
   const zd = (income: number) => calculate(buildQuickInput({ ...q, income }), params).stepById["czd6"]?.value ?? 0;

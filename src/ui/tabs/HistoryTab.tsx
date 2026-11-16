@@ -3,6 +3,7 @@ import { calculate } from "../../engine/calc";
 import { eur, pct } from "../../engine/money";
 import type { CalcResult } from "../../engine/types";
 import type { ParamSet } from "../../params/types";
+import { paramsChanged, paramsForSaved } from "../../params/merge";
 import type { AppData, SavedCalc } from "../../store/storage";
 import { calcToJson, parseCalcJson } from "../../export/json";
 import { openFile, saveFileAs } from "../../store/storage";
@@ -29,9 +30,10 @@ const STEP_ROWS: [string, string][] = [
   ["zpBuduci", "Zdravotné poistenie mesačne budúci rok"],
 ];
 
+/** prepočet so sadzbami uloženými pri výpočte (aby porovnanie sedelo so súhrnom v Histórii) */
 function tryCalc(c: SavedCalc, params: ParamSet): CalcResult | null {
   try {
-    return calculate(c.input, params);
+    return calculate(c.input, paramsForSaved(params, c));
   } catch {
     return null;
   }
@@ -41,6 +43,10 @@ function Compare({ a, b, params }: { a: SavedCalc; b: SavedCalc; params: ParamSe
   const ra = useMemo(() => tryCalc(a, params), [a, params]);
   const rb = useMemo(() => tryCalc(b, params), [b, params]);
   if (!ra || !rb) return <div className="box danger">Jeden z výpočtov sa nepodarilo prepočítať.</div>;
+  const note =
+    a.params && b.params
+      ? "Porovnanie počíta so sadzbami uloženými pri výpočtoch."
+      : "Pri výpočtoch uložených bez sadzieb sa použijú aktuálne sadzby.";
 
   const rows: { label: string; a: string; b: string; diff: string; dn: number }[] = [];
   const money = (label: string, x: number, y: number) => rows.push({ label, a: eur(x), b: eur(y), diff: eur(y - x), dn: y - x });
@@ -62,6 +68,7 @@ function Compare({ a, b, params }: { a: SavedCalc; b: SavedCalc; params: ParamSe
   return (
     <section className="card" aria-label="Porovnanie výpočtov">
       <h2>Porovnanie</h2>
+      <p className="note small">{note}</p>
       <div className="table-wrap">
         <table className="months compare">
           <thead>
@@ -205,15 +212,17 @@ export function HistoryTab({ data, setData, params, onOpen }: Props) {
                       >
                         <input type="text" autoFocus value={renaming.title} onChange={(e) => setRenaming({ id: c.id, title: e.target.value })} aria-label="Nový názov" />
                         <button type="submit">Uložiť</button>
-                        <button type="button" className="ghost" onClick={() => void exportJson(c)}>Export JSON</button>
-                    <button type="button" className="ghost" onClick={() => setRenaming(null)}>Zrušiť</button>
+                        <button type="button" className="ghost" onClick={() => setRenaming(null)}>Zrušiť</button>
                       </form>
                     ) : (
                       <strong>{c.title}</strong>
                     )}
                     <div className="small note">
-                      Rok {c.year} · upravené {skDate(c.updatedAt)}
+                      Rok {c.year} · upravené {skDate(c.updatedAt)} · {c.paramsDate ? `sadzby z ${skDate(c.paramsDate)}` : "sadzby neznáme (staršie uloženie)"}
                     </div>
+                    {paramsChanged(c, params) && (
+                      <div className="small warn-text">Sadzby sa odvtedy zmenili – po otvorení sa výpočet prepočíta s aktuálnymi.</div>
+                    )}
                     <dl className="hist-nums small">
                       <div><dt>Príjmy</dt><dd>{eur(c.summary.income)}</dd></div>
                       <div><dt>Daň</dt><dd>{eur(c.summary.tax)}</dd></div>

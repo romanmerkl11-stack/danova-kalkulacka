@@ -199,7 +199,11 @@ ul.params { margin: 6px 0 0; padding-left: 18px; }
 .page.how li { margin: 4px 0; }
 .banner { display: flex; gap: 12px; align-items: center; padding: 8px 20px; background: var(--info-bg); border-bottom: 1px solid var(--accent); }
 .banner span { flex: 1; }
+.banner.error { background: var(--danger-bg); border-bottom-color: var(--red); }
+.recovery { max-width: 720px; margin: 40px auto; padding: 0 16px; }
+.recovery .row { flex-wrap: wrap; }
 .good-text { color: var(--good); font-weight: 600; }
+.bad-text { color: var(--red); font-weight: 600; }
 .save-actions { flex-wrap: wrap; }
 .hist-group h3 { color: var(--text); margin-top: 18px; }
 .hist-list { list-style: none; margin: 0; padding: 0; }
@@ -429,3 +433,7 @@ ul.params { margin: 6px 0 0; padding-left: 18px; }
   .slider-wrap.slanted .tick span { top: calc(9px + var(--step, 0) * 13px); font-size: 0.68rem; }
   .slider-wrap.slanted .tick-tip { top: calc(24px + var(--step, 0) * 13px); }
 }
+
+/* neplatné číslo v poli */
+input.num.invalid { border-color: var(--red); outline-color: var(--red); }
+.num-err { position: absolute; top: 100%; left: 0; z-index: 5; margin-top: 2px; padding: 2px 6px; min-width: 12rem; background: var(--danger-bg); border: 1px solid var(--red); border-radius: 4px; color: var(--red); font-size: 0.75rem; white-space: normal; }
